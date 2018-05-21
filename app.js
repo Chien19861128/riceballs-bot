@@ -14,7 +14,7 @@ var Group               = require('./models/Group');
 mongoose.connect(process.env.MONGOOSE);
 
 const r = new Snoowrap({
-    userAgent: 'web:ga.ani-gang:v0.0.1 (by /u/Dystopian_Overlord)',
+    userAgent: 'web:ga.rewatchgroups:v0.0.1 (by /u/Dystopian_Overlord)',
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     username: process.env.REDDIT_USER,

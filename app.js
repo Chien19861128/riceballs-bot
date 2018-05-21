@@ -6,7 +6,6 @@ var mongoose     = require('mongoose');
 var findOrCreate = require('mongoose-find-or-create');
 var cron         = require('node-cron');
 var slug         = require('slug');
-var flat         = require('flat');
 
 var Reddit_Post         = require('./models/Reddit_Post');
 var Reddit_Comment_User = require('./models/Reddit_Comment_User');

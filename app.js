@@ -194,12 +194,12 @@ cron.schedule('15,45 * * * *', function(){
               id: reddit_post.id
             }, {
             $push: { 
-              comments_over_time: reddit_post.num_comments,
-              score_over_time: reddit_post.score
+              comments_over_time: post.num_comments,
+              score_over_time: post.score
             },
             $set: { 
-              comment_count: reddit_post.num_comments,
-              score        : reddit_post.score,
+              comment_count: post.num_comments,
+              score        : post.score,
               update_time : Date.now() 
             }
           }, function (err, updated_reddit_post) {
@@ -223,7 +223,7 @@ cron.schedule('15,45 * * * *', function(){
             
           if (comment_users.length > 0) {
             for (var ii in comment_users) {
-              Reddit_Comment_User.find (
+              Reddit_Comment_User.findOne (
                 {
                     reddit_post_id: reddit_post.id,
                     reddit_name: comment_users[ii]
@@ -231,9 +231,7 @@ cron.schedule('15,45 * * * *', function(){
               function (err, user) {
                 if( err ) return console.log( err );
                   
-                console.log(user);  
-                if (typeof user != 'undefined') {
-                console.log('[1]');  
+                if (user) {
                   var new_comment_count = (user.comment_count + 1);
                   Reddit_Comment_User.update({
                       reddit_post_id: reddit_post.id,
@@ -249,7 +247,6 @@ cron.schedule('15,45 * * * *', function(){
                     if( err ) return console.log( err );
                   });
                 } else {
-                console.log('[2]');  
                   Reddit_Comment_User.create({
                       reddit_post_id: reddit_post.id,
                       reddit_name: comment_users[ii],

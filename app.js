@@ -184,7 +184,6 @@ cron.schedule('15,45 * * * *', function(){
   promise_reddit_post.then(function (reddit_posts) {
     for (i=0; i<reddit_posts.length; i++) {
       var reddit_post = reddit_posts[i];
-        console.log(reddit_post);
         
       if (reddit_post.group_slug) {
           

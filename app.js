@@ -231,12 +231,13 @@ cron.schedule('15,45 * * * *', function(){
                 if( err ) return console.log( err );
                   
                 if (user) {
+                  var new_comment_count = (user.comment_count + 1);
                   Reddit_Comment_User.update({
                       reddit_post_id: reddit_post.id,
                       reddit_name: comment_users[ii]
                     }, {
                       $set: { 
-                        comment_count : (user.comment_count + 1),
+                        comment_count : new_comment_count,
                         last_comment_time: Date.now(),
                         update_time   : Date.now()
                       }

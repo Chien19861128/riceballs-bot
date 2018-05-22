@@ -230,7 +230,7 @@ cron.schedule('15,45 * * * *', function(){
               function (err, user) {
                 if( err ) return console.log( err );
                   
-                if (user) {
+                if (typeof user != 'undefined') {
                   var new_comment_count = (user.comment_count + 1);
                   Reddit_Comment_User.update({
                       reddit_post_id: reddit_post.id,

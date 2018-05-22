@@ -184,6 +184,7 @@ cron.schedule('15,45 * * * *', function(){
   promise_reddit_post.then(function (reddit_posts) {
     for (i=0; i<reddit_posts.length; i++) {
       var reddit_post = reddit_posts[i];
+        console.log(reddit_post);
         
       if (reddit_post.group_slug) {
           
@@ -230,7 +231,9 @@ cron.schedule('15,45 * * * *', function(){
               function (err, user) {
                 if( err ) return console.log( err );
                   
+                console.log(user);  
                 if (typeof user != 'undefined') {
+                console.log('[1]');  
                   var new_comment_count = (user.comment_count + 1);
                   Reddit_Comment_User.update({
                       reddit_post_id: reddit_post.id,
@@ -246,6 +249,7 @@ cron.schedule('15,45 * * * *', function(){
                     if( err ) return console.log( err );
                   });
                 } else {
+                console.log('[2]');  
                   Reddit_Comment_User.create({
                       reddit_post_id: reddit_post.id,
                       reddit_name: comment_users[ii],

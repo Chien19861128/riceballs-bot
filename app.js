@@ -210,10 +210,10 @@ cron.schedule('15,45 * * * *', function(){
           if (typeof post.comments != 'undefined' && post.comments.length > 0) {
             for (var post_val in post.comments) {
               if (post.comments[post_val]) {
-                if (typeof post.comments[post_val].author != 'undefined' && comment_users.IndexOf(post.comments[post_val].author.name) == -1) comment_users.push(post.comments[post_val].author.name);
+                if (typeof post.comments[post_val].author != 'undefined' && comment_users.indexOf(post.comments[post_val].author.name) == -1) comment_users.push(post.comments[post_val].author.name);
                   if (typeof post.comments[post_val].replies != 'undefined' && post.comments[post_val].replies.length > 0) {
                   for (var replies_val in post.comments[post_val].replies) {
-                    if (post.comments[post_val].replies[replies_val] && typeof post.comments[post_val].replies[replies_val].author != 'undefined' && comment_users.IndexOf(post.comments[post_val].replies[replies_val].author.name) == -1) comment_users.push(post.comments[post_val].replies[replies_val].author.name);
+                    if (post.comments[post_val].replies[replies_val] && typeof post.comments[post_val].replies[replies_val].author != 'undefined' && comment_users.indexOf(post.comments[post_val].replies[replies_val].author.name) == -1) comment_users.push(post.comments[post_val].replies[replies_val].author.name);
                   } 
                 }
               }

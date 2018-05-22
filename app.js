@@ -54,6 +54,7 @@ submissionStream.on("submission", function(post) {
     title_notag = title_notag.replace("[Spoilers]", "");
     var is_start_group = true;
     var is_discuss_thread = false;
+    var rewatch_title = '';
         
     //if (post.title.match(/interest|index/i)) {
     if (post.title.match(/first|index/i)) {
@@ -72,15 +73,19 @@ submissionStream.on("submission", function(post) {
       } else if (title_notag.toLowerCase().indexOf("interested for ") >= 0) {
         l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interested for ") + 15);
       }
-          
-      var rewatch_title = l_trimmed_str.substring(0, l_trimmed_str.toLowerCase().indexOf("rewatch")).trim();
+        
+      if (l_trimmed_str && l_trimmed_str.toLowerCase().indexOf("rewatch") >= 0) {
+        rewatch_title = l_trimmed_str.substring(0, l_trimmed_str.toLowerCase().indexOf("rewatch")).trim();
+      } else {
+        rewatch_title = l_trimmed_str;
+      }
           
     } else if (post.title.match(/remind|starts in/i)) {
       var is_start_group = false;
           
     } else if (post.title.match(/episode|movie|ova|part/i)) {
           
-      var rewatch_title = title_notag; 
+      rewatch_title = title_notag; 
           
       if (title_notag.toLowerCase().indexOf(" - ") >= 0) {
         rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" - ")).trim();
@@ -101,7 +106,7 @@ submissionStream.on("submission", function(post) {
       
     var group_slug = ''    
         
-    if (is_start_group) {
+    if (is_start_group && rewatch_title != '') {
       group_slug = slug(post.author.name + ' ' + rewatch_title);
         
       Group.findOrCreate({ 

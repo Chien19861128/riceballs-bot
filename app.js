@@ -125,7 +125,7 @@ submissionStream.on("submission", function(post) {
           attending_users_count: 0
       },
       function (err, group) {
-        if( err ) return next( err );
+        if( err ) return console.log( err );
     
         new Reddit_Post({
             id           : post.id,
@@ -144,7 +144,7 @@ submissionStream.on("submission", function(post) {
             create_time  : Date.now(),
             update_time  : Date.now()
         }).save( function ( err, reddit_post, count ){
-            if( err ) return next( err );
+            if( err ) return console.log( err );
         });
       });
     } else {
@@ -165,7 +165,7 @@ submissionStream.on("submission", function(post) {
           create_time  : Date.now(),
           update_time  : Date.now()
       }).save( function ( err, reddit_post, count ){
-        if( err ) return next( err );
+        if( err ) return console.log( err );
       });
     }
   }
@@ -202,7 +202,7 @@ cron.schedule('15,45 * * * *', function(){
               update_time : Date.now() 
             }
           }, function (err, updated_reddit_post) {
-            if( err ) return next( err );
+            if( err ) return console.log( err );
           });
             
           var comment_users = Array();
@@ -226,17 +226,9 @@ cron.schedule('15,45 * * * *', function(){
                 {
                     reddit_post_id: reddit_post.id,
                     reddit_name: comment_users[ii]
-                }, 
-                {
-                    comment_count : Number,
-                    first_comment_time: Date,
-                    last_comment_time: Date,
-                    create_time   : Date,
-                    update_time   : Date,
-                    is_notified   : Boolean
                 },
               function (err, user) {
-                if( err ) return next( err );
+                if( err ) return console.log( err );
                   
                 if (user) {
                   Reddit_Comment_User.update({
@@ -250,7 +242,7 @@ cron.schedule('15,45 * * * *', function(){
                       }
                     }, 
                   function (err, updated_comment_user) {
-                    if( err ) return next( err );
+                    if( err ) return console.log( err );
                   });
                 } else {
                   Reddit_Comment_User.create({
@@ -264,7 +256,7 @@ cron.schedule('15,45 * * * *', function(){
                       is_notified   : false
                     }, 
                   function (err, new_comment_user) {
-                    if( err ) return next( err );
+                    if( err ) return console.log( err );
                   });
                 }
               });

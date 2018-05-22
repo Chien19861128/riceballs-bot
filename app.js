@@ -236,7 +236,7 @@ cron.schedule('15,45 * * * *', function(){
                     is_notified   : Boolean
                 },
               function (err, user) {
-                return done(err, user);
+                if( err ) return next( err );
                   
                 if (user) {
                   Reddit_Comment_User.update({

@@ -56,8 +56,7 @@ submissionStream.on("submission", function(post) {
     var is_discuss_thread = false;
     var rewatch_title = '';
         
-    //if (post.title.match(/interest|index/i)) {
-    if (post.title.match(/first|index/i)) {
+    if (post.title.match(/interest|index/i)) {
       var l_trimmed_str = title_notag; 
         
       if (title_notag.toLowerCase().indexOf("interest for an ") >= 0) {

@@ -189,7 +189,7 @@ cron.schedule('15,45 * * * *', function(){
         r.getSubmission(reddit_post.id).expandReplies({limit: Infinity, depth: Infinity}).then(function(post){
           
           Reddit_Post.update({
-              id: reddit_post.id
+              id: post.id
             }, {
             $push: { 
               comments_over_time: post.num_comments,
@@ -209,10 +209,20 @@ cron.schedule('15,45 * * * *', function(){
           if (typeof post.comments != 'undefined' && post.comments.length > 0) {
             for (var post_val in post.comments) {
               if (post.comments[post_val]) {
-                if (typeof post.comments[post_val].author != 'undefined' && comment_users.indexOf(post.comments[post_val].author.name) == -1) comment_users.push(post.comments[post_val].author.name);
-                  if (typeof post.comments[post_val].replies != 'undefined' && post.comments[post_val].replies.length > 0) {
+                if (
+                    typeof post.comments[post_val].author != 'undefined' &&
+                    comment_users.indexOf(post.comments[post_val].author.name) == -1
+                ) comment_users.push(post.comments[post_val].author.name);
+                  
+                if (
+                    typeof post.comments[post_val].replies != 'undefined' &&
+                    post.comments[post_val].replies.length > 0
+                ) {
                   for (var replies_val in post.comments[post_val].replies) {
-                    if (post.comments[post_val].replies[replies_val] && typeof post.comments[post_val].replies[replies_val].author != 'undefined' && comment_users.indexOf(post.comments[post_val].replies[replies_val].author.name) == -1) comment_users.push(post.comments[post_val].replies[replies_val].author.name);
+                    if (post.comments[post_val].replies[replies_val] && 
+                        typeof post.comments[post_val].replies[replies_val].author != 'undefined' &&
+                        comment_users.indexOf(post.comments[post_val].replies[replies_val].author.name) == -1
+                    ) comment_users.push(post.comments[post_val].replies[replies_val].author.name);
                   } 
                 }
               }
@@ -223,7 +233,7 @@ cron.schedule('15,45 * * * *', function(){
             for (var ii in comment_users) {
               Reddit_Comment_User.findOne (
                 {
-                    reddit_post_id: reddit_post.id,
+                    reddit_post_id: post.id,
                     reddit_name: comment_users[ii]
                 },
               function (err, user) {
@@ -232,7 +242,7 @@ cron.schedule('15,45 * * * *', function(){
                 if (user) {
                   var new_comment_count = (user.comment_count + 1);
                   Reddit_Comment_User.update({
-                      reddit_post_id: reddit_post.id,
+                      reddit_post_id: post.id,
                       reddit_name: comment_users[ii]
                     }, {
                       $set: { 
@@ -246,7 +256,7 @@ cron.schedule('15,45 * * * *', function(){
                   });
                 } else {
                   Reddit_Comment_User.create({
-                      reddit_post_id: reddit_post.id,
+                      reddit_post_id: post.id,
                       reddit_name: comment_users[ii],
                       comment_count : 1,
                       first_comment_time: Date.now(),

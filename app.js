@@ -183,6 +183,7 @@ cron.schedule('15,45 * * * *', function(){
   promise_reddit_post.then(function (reddit_posts) {
     for (i=0; i<reddit_posts.length; i++) {
       var reddit_post = reddit_posts[i];
+      var reddit_post = reddit_posts[i];
         
       if (reddit_post.group_slug) {
           
@@ -230,23 +231,22 @@ cron.schedule('15,45 * * * *', function(){
           }
             
           if (comment_users.length > 0) {
-            for (var ii in comment_users) {
+            comment_users.forEach(function(comment_user){
+                
               Reddit_Comment_User.findOne (
                 {
                     reddit_post_id: post.id,
-                    reddit_name: comment_users[ii]
+                    reddit_name: comment_user
                 },
               function (err, user) {
                 if( err ) return console.log( err );
                   
                 if (user) {
-                  var new_comment_count = (user.comment_count + 1);
                   Reddit_Comment_User.update({
                       reddit_post_id: post.id,
-                      reddit_name: comment_users[ii]
+                      reddit_name: comment_user
                     }, {
                       $set: { 
-                        comment_count : new_comment_count,
                         last_comment_time: Date.now(),
                         update_time   : Date.now()
                       }
@@ -257,8 +257,7 @@ cron.schedule('15,45 * * * *', function(){
                 } else {
                   Reddit_Comment_User.create({
                       reddit_post_id: post.id,
-                      reddit_name: comment_users[ii],
-                      comment_count : 1,
+                      reddit_name: comment_user,
                       first_comment_time: Date.now(),
                       last_comment_time: Date.now(),
                       create_time   : Date.now(),
@@ -270,7 +269,7 @@ cron.schedule('15,45 * * * *', function(){
                   });
                 }
               });
-            }
+            });
           }
         });
       }

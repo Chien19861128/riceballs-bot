@@ -127,8 +127,36 @@ submissionStream.on("submission", function(post) {
       },
       function (err, group) {
         if( err ) return console.log( err );
-    
-        new Reddit_Post({
+          
+        if (post.id) {
+          new Reddit_Post.findOrCreate({
+              id           : post.id
+            },{
+              id           : post.id,
+              title        : post.title,
+              subreddit    : post.subreddit.display_name,
+              reddit_name  : post.author.name,
+              url          : post.url,
+              //series_slug  : String,
+              group_slug   : group_slug,
+              comment_count: post.num_comments,
+              score        : post.score,
+              //comments_over_time: [],
+              //score_over_time: [],
+              is_notified  : false,
+              is_discuss_thread: is_discuss_thread,
+              create_time  : Date.now(),
+              update_time  : Date.now()
+            }, function ( err, reddit_post ){
+              if( err ) return console.log( err );
+          });
+        }
+      });
+    } else {
+      if (post.id) {
+        new Reddit_Post.findOrCreate({
+            id           : post.id
+          },{
             id           : post.id,
             title        : post.title,
             subreddit    : post.subreddit.display_name,
@@ -144,30 +172,10 @@ submissionStream.on("submission", function(post) {
             is_discuss_thread: is_discuss_thread,
             create_time  : Date.now(),
             update_time  : Date.now()
-        }).save( function ( err, reddit_post, count ){
-            if( err ) return console.log( err );
+          }, function ( err, reddit_post ){
+          if( err ) return console.log( err );
         });
-      });
-    } else {
-      new Reddit_Post({
-          id           : post.id,
-          title        : post.title,
-          subreddit    : post.subreddit.display_name,
-          reddit_name  : post.author.name,
-          url          : post.url,
-          //series_slug  : String,
-          group_slug   : group_slug,
-          comment_count: post.num_comments,
-          score        : post.score,
-          //comments_over_time: [],
-          //score_over_time: [],
-          is_notified  : false,
-          is_discuss_thread: is_discuss_thread,
-          create_time  : Date.now(),
-          update_time  : Date.now()
-      }).save( function ( err, reddit_post, count ){
-        if( err ) return console.log( err );
-      });
+      }
     }
   }
 });
@@ -184,7 +192,6 @@ cron.schedule('15,45 * * * *', function(){
     
   promise_reddit_post.then(function (reddit_posts) {
     for (i=0; i<reddit_posts.length; i++) {
-      var reddit_post = reddit_posts[i];
       var reddit_post = reddit_posts[i];
         
       if (reddit_post.group_slug) {

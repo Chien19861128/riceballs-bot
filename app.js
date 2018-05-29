@@ -47,9 +47,8 @@ var submissionStream = client.SubmissionStream({
  
 submissionStream.on("submission", function(post) {
     
-  //if (post.title && post.title.toLowerCase().indexOf("rewatch") >= 0) {
-    
-  if (post.title && post.title.toLowerCase().indexOf("testtest") >= 0) {
+  if (post.title && post.title.toLowerCase().indexOf("rewatch") >= 0) {
+  //if (post.title && post.title.toLowerCase().indexOf("testtest") >= 0) {
         
     var title_notag = post.title;
     title_notag = title_notag.replace("[Rewatch]", "");

@@ -128,7 +128,7 @@ submissionStream.on("submission", function(post) {
         if( err ) return console.log( err );
           
         if (post.id) {
-          new Reddit_Post.findOrCreate({
+          Reddit_Post.findOrCreate({
               id           : post.id
             },{
               id           : post.id,
@@ -153,7 +153,7 @@ submissionStream.on("submission", function(post) {
       });
     } else {
       if (post.id) {
-        new Reddit_Post.findOrCreate({
+        Reddit_Post.findOrCreate({
             id           : post.id
           },{
             id           : post.id,

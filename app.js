@@ -196,97 +196,107 @@ cron.schedule('15,45 * * * *', function(){
       if (reddit_post.group_slug) {
           
         r.getSubmission(reddit_post.id).expandReplies({limit: Infinity, depth: Infinity}).then(function(post){
-          Reddit_Post.update({
-              id: post.id
-            }, {
-            $push: { 
-              comments_over_time: post.num_comments,
-              score_over_time: post.score
-            },
-            $set: { 
-              comment_count: post.num_comments,
-              score        : post.score,
-              update_time : Date.now() 
-            }
-          }, function (err, updated_reddit_post) {
-            if( err ) return console.log( err );
-          });
             
-          var comment_last_times = {};
-
-          if (typeof post.comments != 'undefined' && post.comments.length > 0) {
-            for (var post_val in post.comments) {
-              if (post.comments[post_val]) {
-                if (
-                    typeof post.comments[post_val].author != 'undefined' &&
-                    (typeof comment_last_times[post.comments[post_val].author.name] == 'undefined' || 
-                    comment_last_times[post.comments[post_val].author.name] < post.comments[post_val].created_utc)
-                ) comment_last_times[post.comments[post_val].author.name] = post.comments[post_val].created_utc;
-                  
-                if (
-                    typeof post.comments[post_val].replies != 'undefined' &&
-                    post.comments[post_val].replies.length > 0
-                ) {
-                  for (var replies_val in post.comments[post_val].replies) {
-                    if (post.comments[post_val].replies[replies_val] && 
-                        typeof post.comments[post_val].replies[replies_val].author != 'undefined' &&
-                        (typeof comment_last_times[post.comments[post_val].replies[replies_val].author.name] == 'undefined' || 
-                        comment_last_times[post.comments[post_val].replies[replies_val].author.name] < post.comments[post_val].replies[replies_val].created_utc)
-                    ) comment_last_times[post.comments[post_val].replies[replies_val].author.name] = post.comments[post_val].replies[replies_val].created_utc;
-                  } 
-                }
-              }
-            } 
-          }
-          
-          Object.keys(comment_last_times).forEach(function(comment_user_name) {
-            var comment_last_time = comment_last_times[comment_user_name];
-              
-            Reddit_Comment_User.findOne (
-            {
-                reddit_post_id: post.id,
-                reddit_name: comment_user_name
-            },
-            function (err, user) {
+          if (post.selftext == '[deleted]') {
+            Reddit_Post.remove({
+              id: post.id
+            }, function (err, deleted_post) {
               if( err ) return console.log( err );
+            });     
+          } else {
+          
+            Reddit_Post.update({
+                id: post.id
+              }, {
+              $push: { 
+                comments_over_time: post.num_comments,
+                score_over_time: post.score
+              },
+              $set: { 
+                comment_count: post.num_comments,
+                score        : post.score,
+                update_time : Date.now() 
+              }
+            }, function (err, updated_reddit_post) {
+              if( err ) return console.log( err );
+            });
+            
+            var comment_last_times = {};
+
+            if (typeof post.comments != 'undefined' && post.comments.length > 0) {
+              for (var post_val in post.comments) {
+                if (post.comments[post_val]) {
+                  if (
+                      typeof post.comments[post_val].author != 'undefined' &&
+                      (typeof comment_last_times[post.comments[post_val].author.name] == 'undefined' || 
+                      comment_last_times[post.comments[post_val].author.name] < post.comments[post_val].created_utc)
+                  ) comment_last_times[post.comments[post_val].author.name] = post.comments[post_val].created_utc;
                   
-              if (user) {
-                var d1 = new Date(comment_last_time*1000);  
-                var d2 = new Date(user.last_comment_time);  
+                  if (
+                      typeof post.comments[post_val].replies != 'undefined' &&
+                      post.comments[post_val].replies.length > 0
+                  ) {
+                    for (var replies_val in post.comments[post_val].replies) {
+                      if (post.comments[post_val].replies[replies_val] && 
+                          typeof post.comments[post_val].replies[replies_val].author != 'undefined' &&
+                        (typeof comment_last_times[post.comments[post_val].replies[replies_val].author.name] == 'undefined' || 
+                          comment_last_times[post.comments[post_val].replies[replies_val].author.name] < post.comments[post_val].replies[replies_val].created_utc)
+                      ) comment_last_times[post.comments[post_val].replies[replies_val].author.name] = post.comments[post_val].replies[replies_val].created_utc;
+                    } 
+                  }
+                }
+              } 
+            }
+          
+            Object.keys(comment_last_times).forEach(function(comment_user_name) {
+              var comment_last_time = comment_last_times[comment_user_name];
+              
+              Reddit_Comment_User.findOne (
+              {
+                  reddit_post_id: post.id,
+                  reddit_name: comment_user_name
+              },
+              function (err, user) {
+                if( err ) return console.log( err );
                   
-                if (d1.getTime() > d2.getTime()) {
+                if (user) {
+                  var d1 = new Date(comment_last_time*1000);  
+                  var d2 = new Date(user.last_comment_time);  
+                  
+                  if (d1.getTime() > d2.getTime()) {
                     
-                  Reddit_Comment_User.update({
-                    reddit_post_id: post.id,
-                    reddit_name: comment_user_name
-                    }, {
-                      $set: { 
-                        last_comment_time: d1,
-                        update_time   : Date.now()
-                      }
+                    Reddit_Comment_User.update({
+                        reddit_post_id: post.id,
+                        reddit_name: comment_user_name
+                      }, {
+                        $set: { 
+                          last_comment_time: d1,
+                          update_time   : Date.now()
+                        }
+                      }, 
+                    function (err, updated_comment_user) {
+                      if( err ) return console.log( err );
+                    });
+                  }
+                } else {
+                  var d1 = new Date(comment_last_time*1000);  
+                  
+                  Reddit_Comment_User.create({
+                      reddit_post_id: post.id,
+                      reddit_name: comment_user_name,
+                      first_comment_time: d1,
+                      last_comment_time: d1,
+                      create_time   : Date.now(),
+                      update_time   : Date.now(),
+                      is_notified   : false
                     }, 
-                  function (err, updated_comment_user) {
+                  function (err, new_comment_user) {
                     if( err ) return console.log( err );
                   });
                 }
-              } else {
-                var d1 = new Date(comment_last_time*1000);  
-                  
-                Reddit_Comment_User.create({
-                    reddit_post_id: post.id,
-                    reddit_name: comment_user_name,
-                    first_comment_time: d1,
-                    last_comment_time: d1,
-                    create_time   : Date.now(),
-                    update_time   : Date.now(),
-                    is_notified   : false
-                  }, 
-                function (err, new_comment_user) {
-                  if( err ) return console.log( err );
-                });
-              }
+              });
             });
-          });  
+          }
         });
       }
     }

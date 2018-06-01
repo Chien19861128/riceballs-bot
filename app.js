@@ -197,7 +197,7 @@ cron.schedule('15,45 * * * *', function(){
           
         r.getSubmission(reddit_post.id).expandReplies({limit: Infinity, depth: Infinity}).then(function(post){
             
-          if (post.selftext == '[deleted]') {
+          if (post.selftext == '[deleted]' || post.selftext == '[removed]') {
             Reddit_Post.remove({
               id: post.id
             }, function (err, deleted_post) {

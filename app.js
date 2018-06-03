@@ -193,7 +193,7 @@ cron.schedule('15,45 * * * *', function(){
     for (i=0; i<reddit_posts.length; i++) {
       var reddit_post = reddit_posts[i];
         
-      if (reddit_post.group_slug) {
+      if (reddit_post.id) {
           
         r.getSubmission(reddit_post.id).expandReplies({limit: Infinity, depth: Infinity}).then(function(post){
             

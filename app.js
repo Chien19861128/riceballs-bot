@@ -286,7 +286,7 @@ cron.schedule('15,45 * * * *', function(){
                             });
                           } else {
                             r.composeMessage({
-                              to: post.comments[post_val].author.name,
+                              to: author_name,
                               subject: "This post is not eligible to follow",
                               text: 'The post - ' + reddit_post.title + ' - does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
                             });

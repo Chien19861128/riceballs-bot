@@ -40,8 +40,8 @@ comments.on('comment', (comment) => {
 */
 
 var submissionStream = client.SubmissionStream({
-  "subreddit": "testingground4bots", // optional, defaults to "all",
-  //"subreddit": "anime", // optional, defaults to "all",
+  //"subreddit": "testingground4bots", // optional, defaults to "all",
+  "subreddit": "anime", // optional, defaults to "all",
   "results": 20,        // The number of results to request per request, more the larger the subreddit, about how many results you should get in 2 seconds. Defaults to 5
   "pollTime": 60000
 });
@@ -181,7 +181,7 @@ submissionStream.on("submission", function(post) {
 });
 
 cron.schedule('15,45 * * * *', function(){
-  console.log('cronjob update reddit posts');
+  //console.log('cronjob update reddit posts');
   var d1 = new Date();
     
   d1.setDate(d1.getDate() - 1);
@@ -232,10 +232,7 @@ cron.schedule('15,45 * * * *', function(){
                         comment_last_times[post.comments[post_val].author.name] < post.comments[post_val].created_utc)
                       comment_last_times[post.comments[post_val].author.name] = post.comments[post_val].created_utc;
                       
-                            console.log(post.comments[post_val].created_utc);
-                    //if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
-                    if (post.comments[post_val].body.toLowerCase().indexOf("[command]") >= 0) {
-                        console.log("[command]");
+                    if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
                       if (reddit_post.group_slug) {
                         
                         var author_name = post.comments[post_val].author.name;
@@ -251,14 +248,10 @@ cron.schedule('15,45 * * * *', function(){
                               
                             User.findOrCreate({ name: author_name, reddit_name: author_name }, function (err, user) {
                             
-                            console.log("[user]");
-                            console.log(user);
                               var query_group = Group.findOne({slug : reddit_post.group_slug});
                               var promise_group = query_group.exec();
     
                               promise_group.then(function (group) {
-                            console.log("[group]");
-                            console.log(group);
                                 var new_attending_users = group.attending_users.slice(0);
       
                                 if (new_attending_users.indexOf(user.name) == -1) {
@@ -273,8 +266,6 @@ cron.schedule('15,45 * * * *', function(){
                                           update_time : Date.now() 
                                       }
                                   }, function (err, updated_group) {
-                            console.log("[updated_group]");
-                            console.log(updated_group);
                                     if( err ) return console.log( err );
         
                                     var new_is_allow_private_message;
@@ -287,8 +278,6 @@ cron.schedule('15,45 * * * *', function(){
                                         $push: {joined_groups: group.slug},
                                         $set: {is_allow_private_message: new_is_allow_private_message}
                                     }, function (err, updated_user) {
-                            console.log("[updated_user]");
-                            console.log(updated_user);
                                       if( err ) return console.log( err );
                                     });
                                   });
@@ -378,12 +367,11 @@ cron.schedule('15,45 * * * *', function(){
   });
 });
 
-cron.schedule('17,23,53 * * * *', function(){ 
-  console.log('cronjob parse unread messages for [unfollow]');
+cron.schedule('23,53 * * * *', function(){ 
+  //console.log('cronjob parse unread messages for [unfollow]');
     
   r.getUnreadMessages().then(function(messages){
     if (messages && messages.length > 0) {
-        console.log(messages);
       for (var i in messages) 
           
         if (messages[i] && typeof messages[i].body != 'undefined' && messages[i].body.toLowerCase().indexOf("[unfollow]") >= 0) {{
@@ -394,19 +382,14 @@ cron.schedule('17,23,53 * * * *', function(){
           var group_name = title.substring(0, s);
           var user_name = title.substring(s + 12);
             
-            console.log('[group_name]' + group_name);
-            console.log('[user_name]' + user_name);
-            
           var query_group = Group.findOne({name : group_name, admins: user_name});
           var promise_group = query_group.exec();
     
           promise_group.then(function (group) {
-              console.log("[1]");
             var new_attending_users = group.attending_users.slice(0);
             var user_index = new_attending_users.indexOf(author_name);
       
             if (user_index != -1) {
-              console.log("[2]");
               new_attending_users.splice(user_index, 1);
       
               Group.update({
@@ -419,7 +402,6 @@ cron.schedule('17,23,53 * * * *', function(){
                       update_time : Date.now() 
                   }
               }, function (err, updated_group) {
-              console.log(updated_group);
                 if( err ) return console.log( err );
         
                 User.update({
@@ -436,21 +418,12 @@ cron.schedule('17,23,53 * * * *', function(){
       }
     }
       
-    r.readAllMessages().then(console.log);
+    r.readAllMessages();
   });
 });
-/*
-r.composeMessage({
-  to: 'riceballstest',
-  subject: "Hi, how's it going?",
-  text: 'Long time no see  \n [rewatchgroups.ga](https://rewatchgroups.ga/)'
-});
-*/
-//r.getUnreadMessages().then(console.log);
-
 
 cron.schedule('*/6 * * * *', function(){
-  console.log('cronjob new post private message');
+  //console.log('cronjob new post private message');
     
   var query_reddit_posts = Reddit_Post.
     find({
@@ -465,7 +438,6 @@ cron.schedule('*/6 * * * *', function(){
         
         
       if (reddit_posts_val[i].group) {
-              console.log('[is_private_messaged:false found]');
         var payload = {
           body:  reddit_posts_val[i].url + "  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/*  \n *^To ^unfollow ^this ^rewatch, ^reply ^[Unfollow] ^to ^this ^message ^or ^visit ^https://rewatchgroups.ga/*",
           title: reddit_posts_val[i].group.name + " Rewatch by " + reddit_posts_val[i].reddit_name + " - New post is live!"
@@ -478,10 +450,6 @@ cron.schedule('*/6 * * * *', function(){
         
         promise_user.then(function (user_val) {
           for (ii=0; ii<user_val.length; ii++) {
-              console.log('[pm sent]');
-              console.log(user_val[ii].name);
-              console.log(payload.title);
-              console.log(payload.body);
             r.composeMessage({
               to: user_val[ii].name,
               subject: payload.title,

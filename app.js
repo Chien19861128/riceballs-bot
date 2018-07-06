@@ -144,6 +144,7 @@ submissionStream.on("submission", function(post) {
               //comments_over_time: [],
               //score_over_time: [],
               is_notified  : false,
+              is_private_messaged: false,
               is_discuss_thread: is_discuss_thread,
               create_time  : Date.now(),
               update_time  : Date.now()
@@ -169,6 +170,7 @@ submissionStream.on("submission", function(post) {
             //comments_over_time: [],
             //score_over_time: [],
             is_notified  : false,
+            is_private_messaged: false,
             is_discuss_thread: is_discuss_thread,
             create_time  : Date.now(),
             update_time  : Date.now()
@@ -236,63 +238,8 @@ cron.schedule('15,45 * * * *', function(){
                         
                       var author_name = post.comments[post_val].author.name;
                       var comment_time = new Date(post.comments[post_val].created_utc*1000);
-                      Reddit_Comment_User.findOne ({
-                          reddit_post_id: post.id,
-                          reddit_name: author_name
-                      },
-                      function (err, user_last_comment) {
-                        if( err ) return console.log( err );
-                            
-                        if (!user_last_comment || comment_time.getTime() > user_last_comment.last_comment_time.getTime()) {
-                          if (reddit_post.group_slug) {
-                              
-                            User.findOrCreate({ name: author_name, reddit_name: author_name }, function (err, user) {
-                            
-                              var query_group = Group.findOne({slug : reddit_post.group_slug});
-                              var promise_group = query_group.exec();
-    
-                              promise_group.then(function (group) {
-                                var new_attending_users = group.attending_users.slice(0);
-      
-                                if (new_attending_users.indexOf(user.name) == -1) {
-                                  new_attending_users.push(user.name);
-      
-                                  Group.update({
-                                      slug : reddit_post.group_slug
-                                  }, {
-                                      $set: { 
-                                          attending_users: new_attending_users, 
-                                          attending_users_count: new_attending_users.length, 
-                                          update_time : Date.now() 
-                                      }
-                                  }, function (err, updated_group) {
-                                    if( err ) return console.log( err );
-        
-                                    var new_is_allow_private_message;
-                                    if (user.is_allow_private_message == false) new_is_allow_private_message = false;
-                                    else new_is_allow_private_message = true;
-                                      
-                                    User.update({
-                                        name : user.name
-                                    }, { 
-                                        $push: {joined_groups: group.slug},
-                                        $set: {is_allow_private_message: new_is_allow_private_message}
-                                    }, function (err, updated_user) {
-                                      if( err ) return console.log( err );
-                                    });
-                                  });
-                                }
-                              });
-                            });
-                          } else {
-                            r.composeMessage({
-                              to: author_name,
-                              subject: "This post is not eligible to follow",
-                              text: 'The post - ' + reddit_post.title + ' - does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
-                            });
-                          }
-                        }
-                      });
+                        
+                      handle_follow_comments(post.id, author_name, comment_time, reddit_post.group_slug, reddit_post.title);
                     }
                   }
                   
@@ -365,6 +312,66 @@ cron.schedule('15,45 * * * *', function(){
       }
     }
   });
+    
+  function handle_follow_comments(reddit_post_id, comment_author_name, comment_time, group_slug, reddit_post_title) {
+    Reddit_Comment_User.findOne ({
+        reddit_post_id: reddit_post_id,
+        reddit_name: comment_author_name
+    },
+    function (err, user_last_comment) {
+      if( err ) return console.log( err );
+                            
+      if (!user_last_comment || comment_time.getTime() > user_last_comment.last_comment_time.getTime()) {
+        if (group_slug) {
+                              
+          User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
+                            
+            var query_group = Group.findOne({slug : group_slug});
+            var promise_group = query_group.exec();
+    
+            promise_group.then(function (group) {
+              var new_attending_users = group.attending_users.slice(0);
+      
+              if (new_attending_users.indexOf(user.name) == -1) {
+                new_attending_users.push(user.name);
+      
+                Group.update({
+                    slug : group_slug
+                }, {
+                    $set: { 
+                         attending_users: new_attending_users, 
+                         attending_users_count: new_attending_users.length, 
+                         update_time : Date.now() 
+                    }
+                }, function (err, updated_group) {
+                  if( err ) return console.log( err );
+        
+                  var new_is_allow_private_message;
+                  if (user.is_allow_private_message == false) new_is_allow_private_message = false;
+                  else new_is_allow_private_message = true;
+                                      
+                  User.update({
+                      name : user.name
+                  }, { 
+                      $push: {joined_groups: group.slug},
+                      $set: {is_allow_private_message: new_is_allow_private_message}
+                  }, function (err, updated_user) {
+                    if( err ) return console.log( err );
+                  });
+                });
+              }
+            });
+          });
+        } else {
+          r.composeMessage({
+              to: comment_author_name,
+              subject: "This post is not eligible to follow",
+              text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
+          });
+        }
+      }
+    });
+  }
 });
 
 cron.schedule('23,53 * * * *', function(){ 

@@ -233,18 +233,18 @@ cron.schedule('15,45 * * * *', function(){
                       comment_last_times[post.comments[post_val].author.name] = post.comments[post_val].created_utc;
                       
                     if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
-                      if (reddit_post.group_slug) {
                         
-                        var author_name = post.comments[post_val].author.name;
-                        var comment_time = new Date(post.comments[post_val].created_utc*1000);
-                        Reddit_Comment_User.findOne ({
-                            reddit_post_id: post.id,
-                            reddit_name: author_name
-                        },
-                        function (err, user_last_comment) {
-                          if( err ) return console.log( err );
+                      var author_name = post.comments[post_val].author.name;
+                      var comment_time = new Date(post.comments[post_val].created_utc*1000);
+                      Reddit_Comment_User.findOne ({
+                          reddit_post_id: post.id,
+                          reddit_name: author_name
+                      },
+                      function (err, user_last_comment) {
+                        if( err ) return console.log( err );
                             
-                          if (!user_last_comment || comment_time.getTime() > user_last_comment.last_comment_time.getTime()) {
+                        if (!user_last_comment || comment_time.getTime() > user_last_comment.last_comment_time.getTime()) {
+                          if (reddit_post.group_slug) {
                               
                             User.findOrCreate({ name: author_name, reddit_name: author_name }, function (err, user) {
                             
@@ -284,15 +284,15 @@ cron.schedule('15,45 * * * *', function(){
                                 }
                               });
                             });
+                          } else {
+                            r.composeMessage({
+                              to: post.comments[post_val].author.name,
+                              subject: "This post is not eligible to follow",
+                              text: 'The post - ' + reddit_post.title + ' - does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
+                            });
                           }
-                        });
-                      } else {
-                        r.composeMessage({
-                          to: post.comments[post_val].author.name,
-                          subject: "This post is not eligible to follow",
-                          text: 'The post - ' + reddit_post.title + ' - does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
-                        });
-                      }
+                        }
+                      });
                     }
                   }
                   

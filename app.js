@@ -308,6 +308,8 @@ cron.schedule('15,45 * * * *', function(){
               });
             });
           }
+        }).catch(function(err) {
+          console.log(err);
         });
       }
     }
@@ -367,6 +369,8 @@ cron.schedule('15,45 * * * *', function(){
               to: comment_author_name,
               subject: "This post is not eligible to follow",
               text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
+          }).catch(function(err) {
+            console.log(err);
           });
         }
       }
@@ -425,7 +429,11 @@ cron.schedule('23,53 * * * *', function(){
       }
     }
       
-    r.readAllMessages();
+    r.readAllMessages().catch(function(err) {
+      console.log(err);
+    });
+  }).catch(function(err) {
+    console.log(err);
   });
 });
 
@@ -443,7 +451,6 @@ cron.schedule('*/6 * * * *', function(){
   promise_reddit_posts.then(function (reddit_posts_val) {
     for (i=0; i<reddit_posts_val.length; i++) {
         
-        
       if (reddit_posts_val[i].group) {
         var payload = {
           body:  reddit_posts_val[i].url + "  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/*  \n *^To ^unfollow ^this ^rewatch, ^reply ^[Unfollow] ^to ^this ^message ^or ^visit ^https://rewatchgroups.ga/*",
@@ -452,18 +459,7 @@ cron.schedule('*/6 * * * *', function(){
         
         var all_users = reddit_posts_val[i].group.admins.concat(reddit_posts_val[i].group.attending_users);
         
-        var query_user = User.find({is_allow_private_message : true, name : {$in: all_users}});
-        var promise_user = query_user.exec(); 
-        
-        promise_user.then(function (user_val) {
-          for (ii=0; ii<user_val.length; ii++) {
-            r.composeMessage({
-              to: user_val[ii].name,
-              subject: payload.title,
-              text: payload.body
-            });
-          }
-        });
+        send_private_message_reminder(payload, all_users);
       }
     }
   });
@@ -479,4 +475,22 @@ cron.schedule('*/6 * * * *', function(){
   }, function (err, updated_reddit_post) {
     if( err ) return next( err );
   });
+    
+  function send_private_message_reminder (payload, all_users) {
+      
+    var query_user = User.find({is_allow_private_message : true, name : {$in: all_users}});
+    var promise_user = query_user.exec(); 
+      
+    promise_user.then(function (user_val) {
+      for (ii=0; ii<user_val.length; ii++) {
+        r.composeMessage({
+            to: user_val[ii].name,
+            subject: payload.title,
+            text: payload.body
+        }).catch(function(err) {
+          console.log(err);
+        });
+      }
+    });
+  }
 });

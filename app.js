@@ -399,32 +399,34 @@ cron.schedule('23,53 * * * *', function(){
           var promise_group = query_group.exec();
     
           promise_group.then(function (group) {
-            var new_attending_users = group.attending_users.slice(0);
-            var user_index = new_attending_users.indexOf(author_name);
+            if (group) {
+              var new_attending_users = group.attending_users.slice(0);
+              var user_index = new_attending_users.indexOf(author_name);
       
-            if (user_index != -1) {
-              new_attending_users.splice(user_index, 1);
+              if (user_index != -1) {
+                new_attending_users.splice(user_index, 1);
       
-              Group.update({
-                  name : group_name, 
-                  admins: user_name
-              }, {
-                  $set: { 
-                      attending_users: new_attending_users, 
-                      attending_users_count: new_attending_users.length, 
-                      update_time : Date.now() 
-                  }
-              }, function (err, updated_group) {
-                if( err ) return console.log( err );
-        
-                User.update({
-                    name : author_name
-                }, { 
-                    $pull: {joined_groups: group.slug}
-                }, function (err, updated_user) {
+                Group.update({
+                    name : group_name, 
+                    admins: user_name
+                }, {
+                    $set: { 
+                        attending_users: new_attending_users, 
+                        attending_users_count: new_attending_users.length, 
+                        update_time : Date.now() 
+                    }
+                }, function (err, updated_group) {
                   if( err ) return console.log( err );
+        
+                  User.update({
+                      name : author_name
+                  }, { 
+                      $pull: {joined_groups: group.slug}
+                  }, function (err, updated_user) {
+                    if( err ) return console.log( err );
+                  });
                 });
-              });
+              }
             }
           });
         }

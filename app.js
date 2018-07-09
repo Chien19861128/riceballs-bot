@@ -14,7 +14,7 @@ var User                = require('./models/User');
 mongoose.connect(process.env.MONGOOSE);
 
 const r = new Snoowrap({
-    userAgent: 'web:ga.rewatchgroups:v0.0.1 (by /u/Dystopian_Overlord)',
+    userAgent: process.env.USER_AGENT,
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     username: process.env.REDDIT_USER,
@@ -227,22 +227,16 @@ cron.schedule('15,45 * * * *', function(){
             var comment_last_times = {};
 
             if (typeof post.comments != 'undefined' && post.comments.length > 0) {
+                
               for (var post_val in post.comments) {
-                if (post.comments[post_val]) {
+                if (post.comments[post_val] && post_val != '_r') {
                   if (typeof post.comments[post_val].author != 'undefined') {
                     if (typeof comment_last_times[post.comments[post_val].author.name] == 'undefined' || 
-                        comment_last_times[post.comments[post_val].author.name] < post.comments[post_val].created_utc)
+                        comment_last_times[post.comments[post_val].author.name] < post.comments[post_val].created_utc) {
                       comment_last_times[post.comments[post_val].author.name] = post.comments[post_val].created_utc;
-                      
-                    if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
-                        
-                      var author_name = post.comments[post_val].author.name;
-                      var comment_time = new Date(post.comments[post_val].created_utc*1000);
-                        
-                      handle_follow_comments(post.id, author_name, comment_time, reddit_post.group_slug, reddit_post.title);
                     }
                   }
-                  
+                    
                   if (
                       typeof post.comments[post_val].replies != 'undefined' &&
                       post.comments[post_val].replies.length > 0
@@ -257,6 +251,21 @@ cron.schedule('15,45 * * * *', function(){
                   }
                 }
               } 
+                
+              for (var post_val in post.comments) {
+                if (post.comments[post_val] && post_val != '_r') {
+                  if (typeof post.comments[post_val].author != 'undefined') {
+                    if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
+                        
+                      var author_name = post.comments[post_val].author.name;
+                      var comment_time = new Date(post.comments[post_val].created_utc*1000);
+                      var comment_last_time = new Date(comment_last_times[author_name]);
+                        
+                      handle_follow_comments(author_name, comment_last_time, comment_time, reddit_post.group_slug, reddit_post.title);
+                    }
+                  }
+                }
+              }
             }
           
             Object.keys(comment_last_times).forEach(function(comment_user_name) {
@@ -315,66 +324,59 @@ cron.schedule('15,45 * * * *', function(){
     }
   });
     
-  function handle_follow_comments(reddit_post_id, comment_author_name, comment_time, group_slug, reddit_post_title) {
-    Reddit_Comment_User.findOne ({
-        reddit_post_id: reddit_post_id,
-        reddit_name: comment_author_name
-    },
-    function (err, user_last_comment) {
-      if( err ) return console.log( err );
+  function handle_follow_comments(comment_author_name, comment_last_time, comment_time, group_slug, reddit_post_title) {
                             
-      if (!user_last_comment || comment_time.getTime() > user_last_comment.last_comment_time.getTime()) {
-        if (group_slug) {
+    if (comment_time.getTime() >= comment_last_time.getTime()) {
+      if (group_slug) {
                               
-          User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
+        User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
                             
-            var query_group = Group.findOne({slug : group_slug});
-            var promise_group = query_group.exec();
+          var query_group = Group.findOne({slug : group_slug});
+          var promise_group = query_group.exec();
     
-            promise_group.then(function (group) {
-              var new_attending_users = group.attending_users.slice(0);
+          promise_group.then(function (group) {
+            var new_attending_users = group.attending_users.slice(0);
       
-              if (new_attending_users.indexOf(user.name) == -1) {
-                new_attending_users.push(user.name);
+            if (new_attending_users.indexOf(user.name) == -1) {
+              new_attending_users.push(user.name);
       
-                Group.update({
-                    slug : group_slug
-                }, {
-                    $set: { 
-                         attending_users: new_attending_users, 
-                         attending_users_count: new_attending_users.length, 
-                         update_time : Date.now() 
-                    }
-                }, function (err, updated_group) {
-                  if( err ) return console.log( err );
+              Group.update({
+                  slug : group_slug
+              }, {
+                  $set: { 
+                      attending_users: new_attending_users, 
+                      attending_users_count: new_attending_users.length, 
+                      update_time : Date.now() 
+                  }
+              }, function (err, updated_group) {
+                if( err ) return console.log( err );
         
-                  var new_is_allow_private_message;
-                  if (user.is_allow_private_message == false) new_is_allow_private_message = false;
-                  else new_is_allow_private_message = true;
+                var new_is_allow_private_message;
+                if (user.is_allow_private_message == false) new_is_allow_private_message = false;
+                else new_is_allow_private_message = true;
                                       
-                  User.update({
-                      name : user.name
-                  }, { 
-                      $push: {joined_groups: group.slug},
-                      $set: {is_allow_private_message: new_is_allow_private_message}
-                  }, function (err, updated_user) {
-                    if( err ) return console.log( err );
-                  });
+                User.update({
+                    name : user.name
+                }, { 
+                    $push: {joined_groups: group.slug},
+                    $set: {is_allow_private_message: new_is_allow_private_message}
+                }, function (err, updated_user) {
+                  if( err ) return console.log( err );
                 });
-              }
-            });
+              });
+            }
           });
-        } else {
-          r.composeMessage({
-              to: comment_author_name,
-              subject: "This post is not eligible to follow",
-              text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
-          }).catch(function(err) {
-            console.log(err);
-          });
-        }
+        });
+      } else {
+        r.composeMessage({
+            to: comment_author_name,
+            subject: "This post is not eligible to follow",
+            text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
+        }).catch(function(err) {
+          console.log(err);
+        });
       }
-    });
+    }
   }
 });
 
@@ -472,6 +474,8 @@ cron.schedule('*/6 * * * *', function(){
           is_private_messaged: true,
           update_time : Date.now() 
       }
+  }, {
+      multi: true
   }, function (err, updated_reddit_post) {
     if( err ) return next( err );
   });

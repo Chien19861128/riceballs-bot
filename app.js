@@ -385,9 +385,9 @@ cron.schedule('23,53 * * * *', function(){
     
   r.getUnreadMessages().then(function(messages){
     if (messages && messages.length > 0) {
-      for (var i in messages) 
+      for (var i in messages) {
           
-        if (messages[i] && typeof messages[i].body != 'undefined' && messages[i].body.toLowerCase().indexOf("[unfollow]") >= 0) {{
+        if (messages[i] && typeof messages[i].body != 'undefined' && messages[i].body.toLowerCase().indexOf("[unfollow]") >= 0) {
           var title = messages[i].subject.replace(" - New post is live!", "");
           title = title.replace("re: ", "");
           var s = title.indexOf(" Rewatch by ");

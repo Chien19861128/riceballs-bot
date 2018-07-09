@@ -40,16 +40,14 @@ comments.on('comment', (comment) => {
 */
 
 var submissionStream = client.SubmissionStream({
-  //"subreddit": "testingground4bots", // optional, defaults to "all",
-  "subreddit": "anime", // optional, defaults to "all",
+  "subreddit": process.env.SUBREDDIT, // optional, defaults to "all",
   "results": 20,        // The number of results to request per request, more the larger the subreddit, about how many results you should get in 2 seconds. Defaults to 5
   "pollTime": 60000
 });
  
 submissionStream.on("submission", function(post) {
     
-  if (post.title && post.title.toLowerCase().indexOf("rewatch") >= 0) {
-  //if (post.title && post.title.toLowerCase().indexOf("testtest") >= 0) {
+  if (post.title && post.title.toLowerCase().indexOf(process.env.PARSE_TEXT) >= 0) {
         
     var title_notag = post.title;
     title_notag = title_notag.replace("[Rewatch]", "");
@@ -82,7 +80,7 @@ submissionStream.on("submission", function(post) {
       }
           
     } else if (post.title.match(/remind|starts in/i)) {
-      var is_start_group = false;
+      is_start_group = false;
           
     } else if (post.title.match(/ - | episode| movie| ova| part /i)) {
           
@@ -99,11 +97,13 @@ submissionStream.on("submission", function(post) {
       } else if (title_notag.toLowerCase().indexOf("part") >= 0) {
         rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf("part")).trim();
       } else {
-        var is_start_group = false;
+        is_start_group = false;
       }
           
       is_discuss_thread = true;
     }
+      
+    if (!post.title.match(/\[Rewatch\]/i)) is_start_group = false;
       
     var group_slug = ''    
         
@@ -371,7 +371,7 @@ cron.schedule('15,45 * * * *', function(){
         r.composeMessage({
             to: comment_author_name,
             subject: "This post is not eligible to follow",
-            text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/.*'
+            text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/.*'
         }).catch(function(err) {
           console.log(err);
         });
@@ -455,7 +455,7 @@ cron.schedule('*/6 * * * *', function(){
         
       if (reddit_posts_val[i].group) {
         var payload = {
-          body:  reddit_posts_val[i].url + "  \n  \n *^This ^is ^a ^message ^from ^https://rewatchgroups.ga/*  \n *^To ^unfollow ^this ^rewatch, ^reply ^[Unfollow] ^to ^this ^message ^or ^visit ^https://rewatchgroups.ga/*",
+          body:  "**" + reddit_posts_val[i].url + "**  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/*  \n *^^To ^^unfollow ^^this ^^rewatch, ^^reply **^^[Unfollow]** ^^to ^^this ^^message ^^or ^^visit ^^https://rewatchgroups.ga/*  \n *^^You ^^can ^^also ^^switch ^^to ^^browser ^^notifications ^^at ^^https://rewatchgroups.ga/user/settings*",
           title: reddit_posts_val[i].group.name + " Rewatch by " + reddit_posts_val[i].reddit_name + " - New post is live!"
         };    
         

@@ -260,10 +260,8 @@ cron.schedule('15,45 * * * *', function(){
                       var author_name = post.comments[post_val].author.name;
                       var comment_time = new Date(post.comments[post_val].created_utc);
                       var comment_last_time = new Date(comment_last_times[author_name]);
-                      var group_slug = reddit_post.group_slug;
-                      var reddit_post_title = reddit_post.title;
                         
-                      handle_follow_comments(author_name, comment_last_time, comment_time, group_slug, reddit_post_title);
+                      handle_follow_comments(author_name, comment_last_time, comment_time, post.id);
                     }
                   }
                 }
@@ -326,47 +324,53 @@ cron.schedule('15,45 * * * *', function(){
     }
   });
     
-  function handle_follow_comments(comment_author_name, comment_last_time, comment_time, group_slug, reddit_post_title) {
+  function handle_follow_comments(comment_author_name, comment_last_time, comment_time, post_id) {
                             
     if (comment_time.getTime() >= comment_last_time.getTime()) {
       if (group_slug) {
                               
         User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
                             
-          var query_group = Group.findOne({slug : group_slug});
-          var promise_group = query_group.exec();
+          var query_reddit_post = Reddit_Post.findOne({id : post_id});
+          var promise_reddit_post = query_reddit_post.exec();
     
-          promise_group.then(function (group) {
-            var new_attending_users = group.attending_users.slice(0);
+          promise_reddit_post.then(function (reddit_post) {
+            
+            var query_group = Group.findOne({slug : group_slug});
+            var promise_group = query_group.exec();
+              
+            promise_group.then(function (group) {
+              var new_attending_users = group.attending_users.slice(0);
       
-            if (new_attending_users.indexOf(user.name) == -1) {
-              new_attending_users.push(user.name);
+              if (new_attending_users.indexOf(user.name) == -1) {
+                new_attending_users.push(user.name);
       
-              Group.update({
-                  slug : group_slug
-              }, {
-                  $set: { 
-                      attending_users: new_attending_users, 
-                      attending_users_count: new_attending_users.length, 
-                      update_time : Date.now() 
-                  }
-              }, function (err, updated_group) {
-                if( err ) return console.log( err );
-        
-                var new_is_allow_private_message;
-                if (user.is_allow_private_message == false) new_is_allow_private_message = false;
-                else new_is_allow_private_message = true;
-                                      
-                User.update({
-                    name : user.name
-                }, { 
-                    $push: {joined_groups: group.slug},
-                    $set: {is_allow_private_message: new_is_allow_private_message}
-                }, function (err, updated_user) {
+                Group.update({
+                    slug : group_slug
+                }, {
+                    $set: { 
+                        attending_users: new_attending_users, 
+                        attending_users_count: new_attending_users.length, 
+                        update_time : Date.now() 
+                    }
+                }, function (err, updated_group) {
                   if( err ) return console.log( err );
+        
+                  var new_is_allow_private_message;
+                  if (user.is_allow_private_message == false) new_is_allow_private_message = false;
+                  else new_is_allow_private_message = true;
+                                      
+                  User.update({
+                      name : user.name
+                  }, { 
+                      $push: {joined_groups: group.slug},
+                      $set: {is_allow_private_message: new_is_allow_private_message}
+                  }, function (err, updated_user) {
+                    if( err ) return console.log( err );
+                  });
                 });
-              });
-            }
+              }
+            });
           });
         });
       } else {

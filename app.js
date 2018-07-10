@@ -438,9 +438,13 @@ cron.schedule('23,53 * * * *', function(){
       }
     }
       
-    r.readAllMessages().catch(function(err) {
+    r.markMessagesAsRead(messages).catch(function(err) {
       console.log(err);
     });
+      
+    /*r.readAllMessages().catch(function(err) {
+      console.log(err);
+    });*/
   }).catch(function(err) {
     console.log(err);
   });

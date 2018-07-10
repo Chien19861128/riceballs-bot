@@ -327,16 +327,15 @@ cron.schedule('15,45 * * * *', function(){
   function handle_follow_comments(comment_author_name, comment_last_time, comment_time, post_id) {
                             
     if (comment_time.getTime() >= comment_last_time.getTime()) {
-      if (group_slug) {
                               
-        User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
+      User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
                             
-          var query_reddit_post = Reddit_Post.findOne({id : post_id});
-          var promise_reddit_post = query_reddit_post.exec();
+        var query_reddit_post = Reddit_Post.findOne({id : post_id});
+        var promise_reddit_post = query_reddit_post.exec();
     
-          promise_reddit_post.then(function (reddit_post) {
-            
-            var query_group = Group.findOne({slug : group_slug});
+        promise_reddit_post.then(function (reddit_post) {
+          if (reddit_post.group_slug) {
+            var query_group = Group.findOne({slug : reddit_post.group_slug});
             var promise_group = query_group.exec();
               
             promise_group.then(function (group) {
@@ -346,7 +345,7 @@ cron.schedule('15,45 * * * *', function(){
                 new_attending_users.push(user.name);
       
                 Group.update({
-                    slug : group_slug
+                    slug : reddit_post.group_slug
                 }, {
                     $set: { 
                         attending_users: new_attending_users, 
@@ -371,17 +370,17 @@ cron.schedule('15,45 * * * *', function(){
                 });
               }
             });
-          });
+          } else {
+            r.composeMessage({
+                to: comment_author_name,
+                subject: "This post is not eligible to follow",
+                text: '**Error!** The post **' + reddit_post.title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/.*'
+            }).catch(function(err) {
+              console.log(err);
+            });
+          }
         });
-      } else {
-        r.composeMessage({
-            to: comment_author_name,
-            subject: "This post is not eligible to follow",
-            text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/.*'
-        }).catch(function(err) {
-          console.log(err);
-        });
-      }
+      });
     }
   }
 });

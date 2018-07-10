@@ -258,10 +258,12 @@ cron.schedule('15,45 * * * *', function(){
                     if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
                         
                       var author_name = post.comments[post_val].author.name;
-                      var comment_time = new Date(post.comments[post_val].created_utc*1000);
+                      var comment_time = new Date(post.comments[post_val].created_utc);
                       var comment_last_time = new Date(comment_last_times[author_name]);
+                      var group_slug = reddit_post.group_slug;
+                      var reddit_post_title = reddit_post.title;
                         
-                      handle_follow_comments(author_name, comment_last_time, comment_time, reddit_post.group_slug, reddit_post.title);
+                      handle_follow_comments(author_name, comment_last_time, comment_time, group_slug, reddit_post_title);
                     }
                   }
                 }
@@ -441,7 +443,7 @@ cron.schedule('23,53 * * * *', function(){
   });
 });
 
-cron.schedule('*/6 * * * *', function(){
+cron.schedule('*/3 * * * *', function(){
   //console.log('cronjob new post private message');
     
   var query_reddit_posts = Reddit_Post.
@@ -457,7 +459,7 @@ cron.schedule('*/6 * * * *', function(){
         
       if (reddit_posts_val[i].group) {
         var payload = {
-          body:  "**" + reddit_posts_val[i].url + "**  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/*  \n *^^To ^^unfollow ^^this ^^rewatch, ^^reply **^^[Unfollow]** ^^to ^^this ^^message ^^or ^^visit ^^https://rewatchgroups.ga/*  \n *^^You ^^can ^^also ^^switch ^^to ^^browser ^^notifications ^^at ^^https://rewatchgroups.ga/user/settings*",
+          body:  "**" + reddit_posts_val[i].url + "**  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/*  \n *^^To ^^unfollow ^^this ^^rewatch, ^^reply ^^[Unfollow] ^^to ^^this ^^message ^^or ^^visit ^^https://rewatchgroups.ga/*  \n *^^You ^^can ^^also ^^switch ^^to ^^browser ^^notifications ^^at ^^https://rewatchgroups.ga/user/settings*",
           title: reddit_posts_val[i].group.name + " Rewatch by " + reddit_posts_val[i].reddit_name + " - New post is live!"
         };    
         

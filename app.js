@@ -17,9 +17,17 @@ const r = new Snoowrap({
     userAgent: process.env.USER_AGENT,
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
+    refreshToken: process.env.REDDIT_TOKEN
+});
+/*
+const r = new Snoowrap({
+    userAgent: process.env.USER_AGENT,
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
     username: process.env.REDDIT_USER,
     password: process.env.REDDIT_PASS
 });
+*/
 const client = new Snoostorm(r);
 
 /*
@@ -182,7 +190,7 @@ submissionStream.on("submission", function(post) {
   }
 });
 
-cron.schedule('15,45 * * * *', function(){
+cron.schedule('15,26,45 * * * *', function(){
   //console.log('cronjob update reddit posts');
   var d1 = new Date();
     

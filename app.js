@@ -334,7 +334,7 @@ cron.schedule('15,45 * * * *', function(){
     
   function handle_follow_comments(comment_author_name, comment_last_time, comment_time, post_id) {
                             
-    if (comment_time.getTime() >= comment_last_time.getTime()) {
+    if (comment_time.getTime() >= comment_last_time.getTime() && (Date.now() - comment_time.getTime()*1000) < 1800000) {
                               
       User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
                             

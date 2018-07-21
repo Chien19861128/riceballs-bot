@@ -491,7 +491,7 @@ cron.schedule('*/3 * * * *', function(){
   }, {
       multi: true
   }, function (err, updated_reddit_post) {
-    if( err ) return next( err );
+    return console.log( err );
   });
     
   function send_private_message_reminder (payload, all_users) {

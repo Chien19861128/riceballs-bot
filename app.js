@@ -52,11 +52,12 @@ var submissionStream = client.SubmissionStream({
   "results": 20,        // The number of results to request per request, more the larger the subreddit, about how many results you should get in 2 seconds. Defaults to 5
   "pollTime": 60000
 });
- 
+
 submissionStream.on("submission", function(post) {
     
-  if (post.title && post.title.toLowerCase().indexOf(process.env.PARSE_TEXT) >= 0) {
-        
+  if ((post.title && post.title.toLowerCase().indexOf(process.env.PARSE_TEXT) >= 0) 
+      || post.link_flair_text == "Rewatch") {
+      
     var title_notag = post.title;
     title_notag = title_notag.replace("[Rewatch]", "");
     title_notag = title_notag.replace("[Spoilers]", "");
@@ -86,11 +87,10 @@ submissionStream.on("submission", function(post) {
       } else {
         rewatch_title = l_trimmed_str;
       }
-          
     } else if (post.title.match(/remind|starts in/i)) {
       is_start_group = false;
           
-    } else if (post.title.match(/ - | episode| movie| ova| part /i)) {
+    } else if (post.title.match(/ - | episode| movie| ova| part| season /i)) {
           
       rewatch_title = title_notag; 
           
@@ -111,7 +111,7 @@ submissionStream.on("submission", function(post) {
       is_discuss_thread = true;
     }
       
-    if (!post.title.match(/\[Rewatch\]/i)) is_start_group = false;
+    if (!post.title.match(/\[Rewatch\]/i) && post.link_flair_text != "Rewatch") is_start_group = false;
       
     var group_slug = ''    
         

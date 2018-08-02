@@ -54,7 +54,22 @@ var submissionStream = client.SubmissionStream({
 });
 
 submissionStream.on("submission", function(post) {
-    
+  handle_new_posts(post);
+});
+
+cron.schedule('7,17,37,47 * * * *', function(){
+  r.getNew().then(function(posts){
+    if (posts && posts.length > 0) {
+      for (var i in posts) {
+        if (posts[i] && posts[i].title && posts[i].title.toLowerCase().indexOf(process.env.PARSE_TEXT) == -1) {
+          handle_new_posts(posts[i]);
+        }
+      }
+    }
+  });
+});
+
+function handle_new_posts(post) {
   if ((post.title && post.title.toLowerCase().indexOf(process.env.PARSE_TEXT) >= 0) 
       || post.link_flair_text == "Rewatch") {
       
@@ -188,7 +203,7 @@ submissionStream.on("submission", function(post) {
       }
     }
   }
-});
+}
 
 cron.schedule('15,45 * * * *', function(){
   //console.log('cronjob update reddit posts');

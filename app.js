@@ -105,24 +105,50 @@ function handle_new_posts(post) {
     } else if (post.title.match(/remind|starts in/i)) {
       is_start_group = false;
           
-    } else if (post.title.match(/ - | episode| movie| ova| part| season /i)) {
+    } else if (post.title.match(/ - /i)) {
           
       rewatch_title = title_notag; 
-          
       if (title_notag.toLowerCase().indexOf(" - ") >= 0) {
         rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" - ")).trim();
-      } else if (title_notag.toLowerCase().indexOf("episode") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf("episode")).trim();
-      } else if (title_notag.toLowerCase().indexOf("movie") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf("movie")).trim();
-      } else if (title_notag.toLowerCase().indexOf(" ova ") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" ova ")).trim();;
-      } else if (title_notag.toLowerCase().indexOf("part") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf("part")).trim();
       } else {
         is_start_group = false;
       }
+      is_discuss_thread = true;
+    } else if (post.title.match(/ episode/i)) {
           
+      rewatch_title = title_notag; 
+      if (title_notag.toLowerCase().indexOf(" episode") >= 0) {
+        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" episode")).trim();
+      } else {
+        is_start_group = false;
+      }
+      is_discuss_thread = true;
+    } else if (post.title.match(/ movie/i)) {
+          
+      rewatch_title = title_notag; 
+      if (title_notag.toLowerCase().indexOf(" movie") >= 0) {
+        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" movie")).trim();
+      } else {
+        is_start_group = false;
+      }
+      is_discuss_thread = true;
+    } else if (post.title.match(/ ova /i)) {
+          
+      rewatch_title = title_notag; 
+      if (title_notag.toLowerCase().indexOf(" ova ") >= 0) {
+        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" ova ")).trim();
+      } else {
+        is_start_group = false;
+      }
+      is_discuss_thread = true;
+    } else if (post.title.match(/ season /i)) {
+          
+      rewatch_title = title_notag; 
+      if (title_notag.toLowerCase().indexOf(" season ") >= 0) {
+        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" season ")).trim();
+      } else {
+        is_start_group = false;
+      }
       is_discuss_thread = true;
     }
       

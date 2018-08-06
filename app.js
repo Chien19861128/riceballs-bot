@@ -79,8 +79,8 @@ function handle_new_posts(post) {
     var is_start_group = true;
     var is_discuss_thread = false;
     var rewatch_title = '';
-        
-    if (post.title.match(/interest|schedule/i)) {
+      
+    if (title_notag.match(/interest|schedule/i)) {
       var l_trimmed_str = title_notag; 
         
       if (title_notag.toLowerCase().indexOf("interest for an ") >= 0) {
@@ -102,53 +102,14 @@ function handle_new_posts(post) {
       } else {
         rewatch_title = l_trimmed_str;
       }
-    } else if (post.title.match(/remind|starts in/i)) {
+    } else if (title_notag.match(/remind|starts in/i)) {
       is_start_group = false;
           
-    } else if (post.title.match(/ - /i)) {
+    } else if (title_notag.match(/ - | episode| movie| ova | season /i)) {
           
-      rewatch_title = title_notag; 
-      if (title_notag.toLowerCase().indexOf(" - ") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" - ")).trim();
-      } else {
-        is_start_group = false;
-      }
-      is_discuss_thread = true;
-    } else if (post.title.match(/ episode/i)) {
-          
-      rewatch_title = title_notag; 
-      if (title_notag.toLowerCase().indexOf(" episode") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" episode")).trim();
-      } else {
-        is_start_group = false;
-      }
-      is_discuss_thread = true;
-    } else if (post.title.match(/ movie/i)) {
-          
-      rewatch_title = title_notag; 
-      if (title_notag.toLowerCase().indexOf(" movie") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" movie")).trim();
-      } else {
-        is_start_group = false;
-      }
-      is_discuss_thread = true;
-    } else if (post.title.match(/ ova /i)) {
-          
-      rewatch_title = title_notag; 
-      if (title_notag.toLowerCase().indexOf(" ova ") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" ova ")).trim();
-      } else {
-        is_start_group = false;
-      }
-      is_discuss_thread = true;
-    } else if (post.title.match(/ season /i)) {
-          
-      rewatch_title = title_notag; 
-      if (title_notag.toLowerCase().indexOf(" season ") >= 0) {
-        rewatch_title = rewatch_title.substring(0, title_notag.toLowerCase().indexOf(" season ")).trim();
-      } else {
-        is_start_group = false;
-      }
+      var match_res = title_notag.match(/ - | episode| movie| ova | season /i);
+      rewatch_title = title_notag.substring(0, match_res.index).trim();
+        
       is_discuss_thread = true;
     }
       

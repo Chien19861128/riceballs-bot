@@ -58,7 +58,7 @@ submissionStream.on("submission", function(post) {
 });
 
 cron.schedule('7,17,37,47 * * * *', function(){
-  r.getNew().then(function(posts){
+  r.getNew(process.env.SUBREDDIT).then(function(posts){
     if (posts && posts.length > 0) {
       for (var i in posts) {
         if (posts[i] && posts[i].title && posts[i].title.toLowerCase().indexOf(process.env.PARSE_TEXT) == -1) {

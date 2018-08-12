@@ -145,53 +145,67 @@ function handle_new_posts(post) {
         if( err ) return console.log( err );
           
         if (post.id) {
-          Reddit_Post.findOrCreate({
-              id           : post.id
-            },{
-              id           : post.id,
-              title        : post.title,
-              subreddit    : post.subreddit.display_name,
-              reddit_name  : post.author.name,
-              url          : post.url,
-              //series_slug  : String,
-              group_slug   : group_slug,
-              comment_count: post.num_comments,
-              score        : post.score,
-              //comments_over_time: [],
-              //score_over_time: [],
-              is_notified  : false,
-              is_private_messaged: false,
-              is_discuss_thread: is_discuss_thread,
-              create_time  : Date.now(),
-              update_time  : Date.now()
-            }, function ( err, reddit_post ){
-              if( err ) return console.log( err );
+          Reddit_Post.findOne ({
+              id: post.id
+          },
+          function (err, reddit_post) {
+            if( err ) return console.log( err );
+                  
+            if (!reddit_post) {
+              new Reddit_Post({
+                  id           : post.id,
+                  title        : post.title,
+                  subreddit    : post.subreddit.display_name,
+                  reddit_name  : post.author.name,
+                  url          : post.url,
+                  //series_slug  : String,
+                  group_slug   : group_slug,
+                  comment_count: post.num_comments,
+                  score        : post.score,
+                  //comments_over_time: [],
+                  //score_over_time: [],
+                  is_notified  : false,
+                  is_private_messaged: false,
+                  is_discuss_thread: is_discuss_thread,
+                  create_time  : Date.now(),
+                  update_time  : Date.now()
+              }).save( function ( err, group_schedule, count ){
+                if( err ) return console.log( err );
+              });
+            }
           });
         }
       });
     } else {
       if (post.id) {
-        Reddit_Post.findOrCreate({
-            id           : post.id
-          },{
-            id           : post.id,
-            title        : post.title,
-            subreddit    : post.subreddit.display_name,
-            reddit_name  : post.author.name,
-            url          : post.url,
-            //series_slug  : String,
-            group_slug   : group_slug,
-            comment_count: post.num_comments,
-            score        : post.score,
-            //comments_over_time: [],
-            //score_over_time: [],
-            is_notified  : false,
-            is_private_messaged: false,
-            is_discuss_thread: is_discuss_thread,
-            create_time  : Date.now(),
-            update_time  : Date.now()
-          }, function ( err, reddit_post ){
+        Reddit_Post.findOne ({
+            id: post.id
+        },
+        function (err, reddit_post) {
           if( err ) return console.log( err );
+                  
+          if (!reddit_post) {
+            new Reddit_Post({
+                id           : post.id,
+                title        : post.title,
+                subreddit    : post.subreddit.display_name,
+                reddit_name  : post.author.name,
+                url          : post.url,
+                //series_slug  : String,
+                group_slug   : group_slug,
+                comment_count: post.num_comments,
+                score        : post.score,
+                //comments_over_time: [],
+                //score_over_time: [],
+                is_notified  : false,
+                is_private_messaged: false,
+                is_discuss_thread: is_discuss_thread,
+                create_time  : Date.now(),
+                update_time  : Date.now()
+            }).save( function ( err, group_schedule, count ){
+              if( err ) return console.log( err );
+            });
+          }
         });
       }
     }

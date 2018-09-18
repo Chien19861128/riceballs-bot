@@ -255,16 +255,26 @@ cron.schedule('15,45 * * * *', function(){
             });
             
             var comment_last_times = {};
+            var comment_score_totals = {};
 
             if (typeof post.comments != 'undefined' && post.comments.length > 0) {
                 
               for (var post_val in post.comments) {
                 if (post.comments[post_val] && post_val != '_r') {
                   if (typeof post.comments[post_val].author != 'undefined') {
-                    if (typeof comment_last_times[post.comments[post_val].author.name] == 'undefined' || 
-                        comment_last_times[post.comments[post_val].author.name] < post.comments[post_val].created_utc) {
-                      comment_last_times[post.comments[post_val].author.name] = post.comments[post_val].created_utc;
-                    }
+                    
+                    var author_name = post.comments[post_val].author.name;
+                    var created_utc = post.comments[post_val].created_utc;
+                    var score = post.comments[post_val].score;  
+                    
+                    if (typeof comment_last_times[author_name] == 'undefined' || 
+                        comment_last_times[author_name] < created_utc)
+                      comment_last_times[author_name] = created_utc;
+                      
+                    if (typeof comment_score_totals[author_name] == 'undefined')
+                      comment_score_totals[author_name] = score;
+                    else
+                      comment_score_totals[author_name] += score;
                   }
                     
                   if (
@@ -273,10 +283,21 @@ cron.schedule('15,45 * * * *', function(){
                   ) {
                     for (var replies_val in post.comments[post_val].replies) {
                       if (post.comments[post_val].replies[replies_val] && 
-                          typeof post.comments[post_val].replies[replies_val].author != 'undefined' &&
-                        (typeof comment_last_times[post.comments[post_val].replies[replies_val].author.name] == 'undefined' || 
-                          comment_last_times[post.comments[post_val].replies[replies_val].author.name] < post.comments[post_val].replies[replies_val].created_utc)
-                      ) comment_last_times[post.comments[post_val].replies[replies_val].author.name] = post.comments[post_val].replies[replies_val].created_utc;
+                          typeof post.comments[post_val].replies[replies_val].author != 'undefined') {
+                          
+                        var author_name = post.comments[post_val].replies[replies_val].author.name;
+                        var created_utc = post.comments[post_val].replies[replies_val].created_utc;
+                        var score = post.comments[post_val].replies[replies_val].score;
+                          
+                        if (typeof comment_last_times[author_name] == 'undefined' || 
+                          comment_last_times[author_name] < created_utc) 
+                          comment_last_times[author_name] = created_utc;
+                         
+                        if (typeof comment_score_totals[author_name] == 'undefined')
+                          comment_score_totals[author_name] = score;
+                        else 
+                          comment_score_totals[author_name] += score;
+                      }
                     } 
                   }
                 }
@@ -300,6 +321,7 @@ cron.schedule('15,45 * * * *', function(){
           
             Object.keys(comment_last_times).forEach(function(comment_user_name) {
               var comment_last_time = comment_last_times[comment_user_name];
+              var comment_score_total = comment_score_totals[comment_user_name];
               
               Reddit_Comment_User.findOne (
               {
@@ -317,7 +339,8 @@ cron.schedule('15,45 * * * *', function(){
                     
                     Reddit_Comment_User.update({
                         reddit_post_id: post.id,
-                        reddit_name: comment_user_name
+                        reddit_name: comment_user_name,
+                        score_total: comment_score_total
                       }, {
                         $set: { 
                           last_comment_time: d1,
@@ -334,6 +357,7 @@ cron.schedule('15,45 * * * *', function(){
                   Reddit_Comment_User.create({
                       reddit_post_id: post.id,
                       reddit_name: comment_user_name,
+                      score_total: comment_score_total,
                       first_comment_time: d1,
                       last_comment_time: d1,
                       create_time   : Date.now(),
@@ -516,7 +540,7 @@ cron.schedule('*/3 * * * *', function(){
     if( err ) return console.log( err );
   });
     
-  function send_private_message_reminder (payload, all_users) {
+  function send_private_message_reminder(payload, all_users) {
       
     var query_user = User.find({is_allow_private_message : true, name : {$in: all_users}});
     var promise_user = query_user.exec(); 

@@ -10,6 +10,7 @@ var slug         = require('slug');
 var Reddit_Post         = require('./models/Reddit_Post');
 var Reddit_Comment_User = require('./models/Reddit_Comment_User');
 var Group               = require('./models/Group');
+var Group_Mvp           = require('./models/Group_Mvp');
 var User                = require('./models/User');
 mongoose.connect(process.env.MONGOOSE);
 
@@ -139,10 +140,31 @@ function handle_new_posts(post) {
           //start_time  : start_time,
           create_time : Date.now(),
           update_time : Date.now(),
-          attending_users_count: 0
+          attending_users_count: 0,
+          post_count: 1
       },
       function (err, group) {
         if( err ) return console.log( err );
+          
+        if (group) {
+          query_reddit_posts = Reddit_Post.count({group_slug: group.slug});
+          var promise_reddit_posts = query_reddit_posts.exec();
+
+          promise_reddit_posts.then(function (reddit_posts_val) {
+            if (reddit_posts_val) {
+              Group.update({
+                slug : group.slug
+              }, {
+                $set: { 
+                    post_count: reddit_posts_val,
+                    update_time : Date.now() 
+                }
+              }, function (err, updated_group) {
+                if( err ) return console.log( err );
+              });
+            }
+          });
+        }
           
         if (post.id) {
           Reddit_Post.findOne ({
@@ -212,7 +234,7 @@ function handle_new_posts(post) {
   }
 }
 
-cron.schedule('15,45 * * * *', function(){
+cron.schedule('15,41,45 * * * *', function(){
   //console.log('cronjob update reddit posts');
   var d1 = new Date();
     
@@ -228,214 +250,277 @@ cron.schedule('15,45 * * * *', function(){
       var reddit_post = reddit_posts[i];
         
       if (reddit_post.id) {
-          
-        r.getSubmission(reddit_post.id).expandReplies({limit: Infinity, depth: Infinity}).then(function(post){
-          if (post.selftext == '[deleted]' || post.selftext == '[removed]') {
-            Reddit_Post.remove({
-                id: post.id
-            }, function (err, deleted_post) {
-              if( err ) return console.log( err );
-            });     
-          } else {
-          
-            Reddit_Post.update({
-                id: post.id
-              }, {
-              $push: { 
-                comments_over_time: post.num_comments,
-                score_over_time: post.score
-              },
-              $set: { 
-                comment_count: post.num_comments,
-                score        : post.score,
-                update_time : Date.now() 
-              }
-            }, function (err, updated_reddit_post) {
-              if( err ) return console.log( err );
-            });
-            
-            var comment_last_times = {};
-            var comment_score_totals = {};
-
-            if (typeof post.comments != 'undefined' && post.comments.length > 0) {
-                
-              for (var post_val in post.comments) {
-                if (post.comments[post_val] && post_val != '_r') {
-                  if (typeof post.comments[post_val].author != 'undefined') {
-                    
-                    var author_name = post.comments[post_val].author.name;
-                    var created_utc = post.comments[post_val].created_utc;
-                    var score = post.comments[post_val].score;  
-                    
-                    if (typeof comment_last_times[author_name] == 'undefined' || 
-                        comment_last_times[author_name] < created_utc)
-                      comment_last_times[author_name] = created_utc;
-                      
-                    if (typeof comment_score_totals[author_name] == 'undefined')
-                      comment_score_totals[author_name] = score;
-                    else
-                      comment_score_totals[author_name] += score;
-                  }
-                    
-                  if (
-                      typeof post.comments[post_val].replies != 'undefined' &&
-                      post.comments[post_val].replies.length > 0
-                  ) {
-                    for (var replies_val in post.comments[post_val].replies) {
-                      if (post.comments[post_val].replies[replies_val] && 
-                          typeof post.comments[post_val].replies[replies_val].author != 'undefined') {
-                          
-                        var author_name = post.comments[post_val].replies[replies_val].author.name;
-                        var created_utc = post.comments[post_val].replies[replies_val].created_utc;
-                        var score = post.comments[post_val].replies[replies_val].score;
-                          
-                        if (typeof comment_last_times[author_name] == 'undefined' || 
-                          comment_last_times[author_name] < created_utc) 
-                          comment_last_times[author_name] = created_utc;
-                         
-                        if (typeof comment_score_totals[author_name] == 'undefined')
-                          comment_score_totals[author_name] = score;
-                        else 
-                          comment_score_totals[author_name] += score;
-                      }
-                    } 
-                  }
-                }
-              } 
-                
-              for (var post_val in post.comments) {
-                if (post.comments[post_val] && post_val != '_r') {
-                  if (typeof post.comments[post_val].author != 'undefined') {
-                    if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
-                        
-                      var author_name = post.comments[post_val].author.name;
-                      var comment_time = new Date(post.comments[post_val].created_utc);
-                      var comment_last_time = new Date(comment_last_times[author_name]);
-                        
-                      handle_follow_comments(author_name, comment_last_time, comment_time, post.id);
-                    }
-                  }
-                }
-              }
-            }
-          
-            Object.keys(comment_last_times).forEach(function(comment_user_name) {
-              var comment_last_time = comment_last_times[comment_user_name];
-              var comment_score_total = comment_score_totals[comment_user_name];
-              
-              Reddit_Comment_User.findOne (
-              {
-                  reddit_post_id: post.id,
-                  reddit_name: comment_user_name
-              },
-              function (err, user) {
-                if( err ) return console.log( err );
-                  
-                if (user) {
-                  var d1 = new Date(comment_last_time*1000);  
-                  var d2 = new Date(user.last_comment_time);  
-                  
-                  if (d1.getTime() > d2.getTime()) {
-                    
-                    Reddit_Comment_User.update({
-                        reddit_post_id: post.id,
-                        reddit_name: comment_user_name,
-                        score_total: comment_score_total
-                      }, {
-                        $set: { 
-                          last_comment_time: d1,
-                          update_time   : Date.now()
-                        }
-                      }, 
-                    function (err, updated_comment_user) {
-                      if( err ) return console.log( err );
-                    });
-                  }
-                } else {
-                  var d1 = new Date(comment_last_time*1000);  
-                  
-                  Reddit_Comment_User.create({
-                      reddit_post_id: post.id,
-                      reddit_name: comment_user_name,
-                      score_total: comment_score_total,
-                      first_comment_time: d1,
-                      last_comment_time: d1,
-                      create_time   : Date.now(),
-                      update_time   : Date.now(),
-                      is_notified   : false
-                    }, 
-                  function (err, new_comment_user) {
-                    if( err ) return console.log( err );
-                  });
-                }
-              });
-            });
-          }
-        }).catch(function(err) {
-          console.log(err);
-        });
+        update_post_from_reddit(reddit_post.id, reddit_post.group_slug, reddit_post.title);  
       }
     }
   });
+  
+  function update_post_from_reddit(reddit_post_id, reddit_post_group_slug, reddit_post_title) {
+        
+    r.getSubmission(reddit_post_id).expandReplies({limit: Infinity, depth: Infinity}).then(function(post){
+      if (post.selftext == '[deleted]' || post.selftext == '[removed]') {
+        Reddit_Post.remove({
+            id: post.id
+        }, function (err, deleted_post) {
+          if( err ) return console.log( err );
+        });     
+      } else {
+          
+        Reddit_Post.update({
+            id: post.id
+        }, {
+            $push: { 
+                comments_over_time: post.num_comments,
+                score_over_time: post.score
+            },
+            $set: { 
+                comment_count: post.num_comments,
+                score        : post.score,
+                update_time : Date.now() 
+            }
+        }, function (err, updated_reddit_post) {
+          if( err ) return console.log( err );
+        });
+            
+        var comment_last_times = {};
+        var comment_score_totals = {};
+
+        if (typeof post.comments != 'undefined' && post.comments.length > 0) {
+                
+          for (var post_val in post.comments) {
+            if (post.comments[post_val] && post_val != '_r') {
+              if (typeof post.comments[post_val].author != 'undefined') {
+                    
+                var author_name = post.comments[post_val].author.name;
+                var created_utc = post.comments[post_val].created_utc;
+                var score = post.comments[post_val].score;  
+                    
+                if (typeof comment_last_times[author_name] == 'undefined' || 
+                        comment_last_times[author_name] < created_utc)
+                  comment_last_times[author_name] = created_utc;
+                      
+                if (typeof comment_score_totals[author_name] == 'undefined')
+                  comment_score_totals[author_name] = score;
+                else
+                  comment_score_totals[author_name] += score;
+              }
+                    
+              if (
+                  typeof post.comments[post_val].replies != 'undefined' &&
+                  post.comments[post_val].replies.length > 0
+              ) {
+                for (var replies_val in post.comments[post_val].replies) {
+                  if (post.comments[post_val].replies[replies_val] && 
+                        typeof post.comments[post_val].replies[replies_val].author != 'undefined') {
+                          
+                    var author_name = post.comments[post_val].replies[replies_val].author.name;
+                    var created_utc = post.comments[post_val].replies[replies_val].created_utc;
+                    var score = post.comments[post_val].replies[replies_val].score;
+                          
+                    if (typeof comment_last_times[author_name] == 'undefined' || 
+                        comment_last_times[author_name] < created_utc) 
+                      comment_last_times[author_name] = created_utc;
+                         
+                    if (typeof comment_score_totals[author_name] == 'undefined')
+                      comment_score_totals[author_name] = score;
+                    else 
+                      comment_score_totals[author_name] += score;
+                  }
+                } 
+              }
+            }
+          } 
+                
+          for (var post_val in post.comments) {
+            if (post.comments[post_val] && post_val != '_r') {
+              if (typeof post.comments[post_val].author != 'undefined') {
+                if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
+                        
+                  var author_name = post.comments[post_val].author.name;
+                  var comment_time = new Date(post.comments[post_val].created_utc);
+                  var comment_last_time = new Date(comment_last_times[author_name]);
+                        
+                  handle_follow_comments(author_name, comment_last_time, comment_time, post.id, reddit_post_group_slug, reddit_post_title);
+                }
+              }
+            }
+          }
+        }
+          
+        Object.keys(comment_last_times).forEach(function(comment_user_name) {
+          var comment_last_time = comment_last_times[comment_user_name];
+          var comment_score_total = comment_score_totals[comment_user_name];
+              
+          Reddit_Comment_User.findOne ({
+              reddit_post_id: post.id,
+              reddit_name: comment_user_name
+          },
+          function (err, user) {
+            if( err ) return console.log( err );
+                  
+            if (user) {
+              var d1 = new Date(comment_last_time*1000);  
+              var d2 = new Date(user.last_comment_time);  
+                  
+              if (d1.getTime() >= d2.getTime()) {
+                    
+                Reddit_Comment_User.update({
+                    reddit_post_id: post.id,
+                    reddit_name: comment_user_name
+                }, {
+                    $set: { 
+                        last_comment_time: d1,
+                        score_total: comment_score_total,
+                        update_time   : Date.now()
+                    }
+                }, 
+                function (err, updated_comment_user) {
+                  if( err ) return console.log( err );
+                        
+                  var add_score = comment_score_total - user.score_total;
+                  if (reddit_post_group_slug && add_score != 0)
+                    update_group_mvp(comment_user_name, reddit_post_group_slug, add_score);
+                });
+              }
+            } else {
+              var d1 = new Date(comment_last_time*1000);  
+                  
+              Reddit_Comment_User.create({
+                  reddit_post_id: post.id,
+                  reddit_name: comment_user_name,
+                  score_total: comment_score_total,
+                  first_comment_time: d1,
+                  last_comment_time: d1,
+                  create_time   : Date.now(),
+                  update_time   : Date.now(),
+                  is_notified   : false
+              }, 
+              function (err, new_comment_user) {
+                if( err ) return console.log( err );
+                    
+                if (reddit_post_group_slug && comment_score_total != 0)
+                  update_group_mvp(comment_user_name, reddit_post_group_slug, comment_score_total);
+              });
+            }
+          });
+        });
+      }
+    }).catch(function(err) {
+      console.log(err);
+    });
+  }
     
-  function handle_follow_comments(comment_author_name, comment_last_time, comment_time, post_id) {
+  function handle_follow_comments(comment_author_name, comment_last_time, comment_time, reddit_post_id, reddit_post_group_slug, reddit_post_title) {
                             
     if (comment_time.getTime() >= comment_last_time.getTime() && (Date.now() - comment_time.getTime()*1000) < 1800000) {
                               
       User.findOrCreate({ name: comment_author_name, reddit_name: comment_author_name }, function (err, user) {
-                            
-        var query_reddit_post = Reddit_Post.findOne({id : post_id});
-        var promise_reddit_post = query_reddit_post.exec();
-    
-        promise_reddit_post.then(function (reddit_post) {
-          if (reddit_post.group_slug) {
-            var query_group = Group.findOne({slug : reddit_post.group_slug});
-            var promise_group = query_group.exec();
+        if (reddit_post_group_slug) {
+          var query_group = Group.findOne({slug : reddit_post_group_slug});
+          var promise_group = query_group.exec();
               
-            promise_group.then(function (group) {
-              var new_attending_users = group.attending_users.slice(0);
+          promise_group.then(function (group) {
+            var new_attending_users = group.attending_users.slice(0);
       
-              if (new_attending_users.indexOf(user.name) == -1) {
-                new_attending_users.push(user.name);
+            if (new_attending_users.indexOf(user.name) == -1) {
+              new_attending_users.push(user.name);
       
-                Group.update({
-                    slug : reddit_post.group_slug
+              Group.update({
+                  slug : reddit_post_group_slug
+              }, {
+                  $set: { 
+                      attending_users: new_attending_users, 
+                      attending_users_count: new_attending_users.length, 
+                      update_time : Date.now() 
+                  }
+              }, function (err, updated_group) {
+                if( err ) return console.log( err );
+        
+                var new_is_allow_private_message;
+                if (user.is_allow_private_message == false) new_is_allow_private_message = false;
+                else new_is_allow_private_message = true;
+                                      
+                User.update({
+                    name : user.name
+                }, { 
+                    $push: {joined_groups: group.slug},
+                    $set: {is_allow_private_message: new_is_allow_private_message}
+                }, function (err, updated_user) {
+                  if( err ) return console.log( err );
+                });
+              });
+            }
+          });
+        } else {
+          r.composeMessage({
+              to: comment_author_name,
+              subject: "This post is not eligible to follow",
+              text: '**Error!** The post **' + reddit_post_title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/.*'
+          }).catch(function(err) {
+            console.log(err);
+          });
+        }
+      });
+    }
+  }
+    
+  function update_group_mvp(comment_user_name, reddit_post_group_slug, add_score) {
+    var query_reddit_posts = Reddit_Post.find({group_slug: reddit_post_group_slug});
+    var promise_reddit_posts = query_reddit_posts.exec();
+
+    promise_reddit_posts.then(function (reddit_posts_val) {
+      if (reddit_posts_val) {
+        var reddit_post_ids = [];
+          
+        for (i=0; i<reddit_posts_val.length; i++) {
+          reddit_post_ids[i] = reddit_posts_val[i].id;
+        }
+          
+        var query_comment_users = Reddit_Comment_User.find({reddit_name: comment_user_name, reddit_post_id: {$in: reddit_post_ids}});
+        var promise_comment_users = query_comment_users.exec();
+
+        promise_comment_users.then(function (reddit_comment_users_val) {
+          if (reddit_comment_users_val) {
+            var attend_count = reddit_comment_users_val.length;
+              
+            Group_Mvp.findOne({ 
+                group_slug  : reddit_post_group_slug,
+                reddit_name : comment_user_name,
+            },
+            function (err, group_mvp) {
+              if( err ) return console.log( err );
+                
+              if (group_mvp) {
+                var new_score_total = group_mvp.score_total + add_score;
+                Group_Mvp.update({
+                    group_slug  : reddit_post_group_slug,
+                    reddit_name : comment_user_name,
                 }, {
                     $set: { 
-                        attending_users: new_attending_users, 
-                        attending_users_count: new_attending_users.length, 
+                        score_total : new_score_total,
+                        attend_count: attend_count,
                         update_time : Date.now() 
                     }
-                }, function (err, updated_group) {
+                }, function (err, updated_group_mvp) {
                   if( err ) return console.log( err );
-        
-                  var new_is_allow_private_message;
-                  if (user.is_allow_private_message == false) new_is_allow_private_message = false;
-                  else new_is_allow_private_message = true;
-                                      
-                  User.update({
-                      name : user.name
-                  }, { 
-                      $push: {joined_groups: group.slug},
-                      $set: {is_allow_private_message: new_is_allow_private_message}
-                  }, function (err, updated_user) {
-                    if( err ) return console.log( err );
-                  });
+                });
+              } else {
+                Group_Mvp.create({
+                    group_slug  : reddit_post_group_slug,
+                    reddit_name : comment_user_name,
+                    score_total : add_score,
+                    attend_count: attend_count,
+                    create_time : Date.now(),
+                    update_time : Date.now()
+                }, function (err, new_group_mvp) {
+                  if( err ) return console.log( err );
                 });
               }
             });
-          } else {
-            r.composeMessage({
-                to: comment_author_name,
-                subject: "This post is not eligible to follow",
-                text: '**Error!** The post **' + reddit_post.title + '** does not follow the expected formats (https://rewatchgroups.ga/about) therefore cannot be grouped and followed.  \n  \n *^^This ^^is ^^a ^^message ^^from ^^https://rewatchgroups.ga/.*'
-            }).catch(function(err) {
-              console.log(err);
-            });
           }
         });
-      });
-    }
+      }
+    });
   }
 });
 

@@ -234,7 +234,7 @@ function handle_new_posts(post) {
   }
 }
 
-cron.schedule('15,41,45 * * * *', function(){
+cron.schedule('15,45 * * * *', function(){
   //console.log('cronjob update reddit posts');
   var d1 = new Date();
     

@@ -284,6 +284,9 @@ cron.schedule('15,45 * * * *', function(){
             
         var comment_last_times = {};
         var comment_score_totals = {};
+        var best_comments = {};
+        var best_comment_urls = {};
+        var best_comment_scores = {};
 
         if (typeof post.comments != 'undefined' && post.comments.length > 0) {
                 
@@ -292,17 +295,26 @@ cron.schedule('15,45 * * * *', function(){
               if (typeof post.comments[post_val].author != 'undefined') {
                     
                 var author_name = post.comments[post_val].author.name;
-                var created_utc = post.comments[post_val].created_utc;
-                var score = post.comments[post_val].score;  
+                if (author_name != '[deleted]' && author_name != '[removed]') {
+                  var created_utc = post.comments[post_val].created_utc;
+                  var score = post.comments[post_val].score;  
                     
-                if (typeof comment_last_times[author_name] == 'undefined' || 
+                  if (typeof comment_last_times[author_name] == 'undefined' || 
                         comment_last_times[author_name] < created_utc)
-                  comment_last_times[author_name] = created_utc;
+                    comment_last_times[author_name] = created_utc;
                       
-                if (typeof comment_score_totals[author_name] == 'undefined')
-                  comment_score_totals[author_name] = score;
-                else
-                  comment_score_totals[author_name] += score;
+                  if (typeof comment_score_totals[author_name] == 'undefined')
+                    comment_score_totals[author_name] = score;
+                  else
+                    comment_score_totals[author_name] += score;
+                    
+                  if (typeof best_comment_scores[author_name] == 'undefined' || 
+                        best_comment_scores[author_name] < score) {
+                    best_comment_scores[author_name] = score;
+                    best_comment_urls[author_name] = post.comments[post_val].url;
+                    best_comments[author_name] = post.comments[post_val].body.substring(0, 140);
+                  }
+                }
               }
                     
               if (
@@ -314,17 +326,19 @@ cron.schedule('15,45 * * * *', function(){
                         typeof post.comments[post_val].replies[replies_val].author != 'undefined') {
                           
                     var author_name = post.comments[post_val].replies[replies_val].author.name;
-                    var created_utc = post.comments[post_val].replies[replies_val].created_utc;
-                    var score = post.comments[post_val].replies[replies_val].score;
+                    if (author_name != '[deleted]' && author_name != '[removed]') {
+                      var created_utc = post.comments[post_val].replies[replies_val].created_utc;
+                      var score = post.comments[post_val].replies[replies_val].score;
                           
-                    if (typeof comment_last_times[author_name] == 'undefined' || 
-                        comment_last_times[author_name] < created_utc) 
-                      comment_last_times[author_name] = created_utc;
+                      if (typeof comment_last_times[author_name] == 'undefined' || 
+                          comment_last_times[author_name] < created_utc) 
+                        comment_last_times[author_name] = created_utc;
                          
-                    if (typeof comment_score_totals[author_name] == 'undefined')
-                      comment_score_totals[author_name] = score;
-                    else 
-                      comment_score_totals[author_name] += score;
+                      if (typeof comment_score_totals[author_name] == 'undefined')
+                        comment_score_totals[author_name] = score;
+                      else 
+                        comment_score_totals[author_name] += score;
+                    }
                   }
                 } 
               }
@@ -335,12 +349,28 @@ cron.schedule('15,45 * * * *', function(){
             if (post.comments[post_val] && post_val != '_r') {
               if (typeof post.comments[post_val].author != 'undefined') {
                 if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
-                        
                   var author_name = post.comments[post_val].author.name;
                   var comment_time = new Date(post.comments[post_val].created_utc);
                   var comment_last_time = new Date(comment_last_times[author_name]);
                         
                   handle_follow_comments(author_name, comment_last_time, comment_time, post.id, reddit_post_group_slug, reddit_post_title);
+                }
+                if (
+                    typeof post.comments[post_val].replies != 'undefined' &&
+                    post.comments[post_val].replies.length > 0
+                ) {
+                  for (var replies_val in post.comments[post_val].replies) {
+                      
+                    if (post.comments[post_val].replies[replies_val] && 
+                        typeof post.comments[post_val].replies[replies_val].body != 'undefined') {
+                      if (post.comments[post_val].replies[replies_val].body.toLowerCase().indexOf("[mvp]") >= 0) {
+                        var author_name = post.comments[post_val].author.name;
+                        var voter_name = post.comments[post_val].replies[replies_val].author.name;
+                        
+                        handle_mvp_comments(author_name, voter_name, reddit_post_group_slug);
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -348,8 +378,10 @@ cron.schedule('15,45 * * * *', function(){
         }
           
         Object.keys(comment_last_times).forEach(function(comment_user_name) {
-          var comment_last_time = comment_last_times[comment_user_name];
+          var comment_last_time   = comment_last_times[comment_user_name];
           var comment_score_total = comment_score_totals[comment_user_name];
+          var best_comment        = best_comments[comment_user_name];
+          var best_comment_url    = best_comment_urls[comment_user_name];
               
           Reddit_Comment_User.findOne ({
               reddit_post_id: post.id,
@@ -379,7 +411,7 @@ cron.schedule('15,45 * * * *', function(){
                         
                   var add_score = comment_score_total - user.score_total;
                   if (reddit_post_group_slug && add_score != 0)
-                    update_group_mvp(comment_user_name, reddit_post_group_slug, add_score);
+                    update_group_mvp(comment_user_name, reddit_post_group_slug, add_score, best_comment, best_comment_url);
                 });
               }
             } else {
@@ -399,7 +431,7 @@ cron.schedule('15,45 * * * *', function(){
                 if( err ) return console.log( err );
                     
                 if (reddit_post_group_slug && comment_score_total != 0)
-                  update_group_mvp(comment_user_name, reddit_post_group_slug, comment_score_total);
+                  update_group_mvp(comment_user_name, reddit_post_group_slug, comment_score_total, best_comment, best_comment_url);
               });
             }
           });
@@ -463,8 +495,35 @@ cron.schedule('15,45 * * * *', function(){
       });
     }
   }
+  
+  function handle_mvp_comments(author_name, voter_name, reddit_post_group_slug) {
+    var query_group_mvp = Group_Mvp.findOne({
+        group_slug : reddit_post_group_slug, 
+        reddit_name : author_name
+    });
+    var promise_group_mvp = query_group_mvp.exec();
     
-  function update_group_mvp(comment_user_name, reddit_post_group_slug, add_score) {
+    promise_group_mvp.then(function (group_mvp) {
+      if (promise_group_mvp) {
+      
+        Group_Mvp.update({
+            group_slug : reddit_post_group_slug, 
+            reddit_name : author_name
+        }, {
+            $addToSet: { 
+                votes: voter_name
+            },
+            $set: {
+                update_time : Date.now() 
+            }
+        }, function (err, updated_group_mvp) {
+          if( err ) return console.log( err );
+        });
+      }
+    });
+  }    
+    
+  function update_group_mvp(comment_user_name, reddit_post_group_slug, add_score, best_comment, best_comment_url) {
     var query_reddit_posts = Reddit_Post.find({group_slug: reddit_post_group_slug});
     var promise_reddit_posts = query_reddit_posts.exec();
 
@@ -499,6 +558,8 @@ cron.schedule('15,45 * * * *', function(){
                     $set: { 
                         score_total : new_score_total,
                         attend_count: attend_count,
+                        best_comment: best_comment,
+                        best_comment_url: best_comment_url,
                         update_time : Date.now() 
                     }
                 }, function (err, updated_group_mvp) {
@@ -510,6 +571,8 @@ cron.schedule('15,45 * * * *', function(){
                     reddit_name : comment_user_name,
                     score_total : add_score,
                     attend_count: attend_count,
+                    best_comment: best_comment,
+                    best_comment_url: best_comment_url,
                     create_time : Date.now(),
                     update_time : Date.now()
                 }, function (err, new_group_mvp) {

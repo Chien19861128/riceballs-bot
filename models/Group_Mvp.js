@@ -5,9 +5,11 @@ var Schema   = mongoose.Schema;
 var Group_Mvp = new Schema({
     group_slug  : String,
     reddit_name : String,
-    votes       : Number,
+    votes       : [],
     score_total : Number,
     attend_count: Number,
+    best_comment: String,
+    best_comment_url: String,
     create_time : Date,
     update_time : Date    
 });

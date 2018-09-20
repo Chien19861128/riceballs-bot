@@ -311,7 +311,7 @@ cron.schedule('15,45 * * * *', function(){
                   if (typeof best_comment_scores[author_name] == 'undefined' || 
                         best_comment_scores[author_name] < score) {
                     best_comment_scores[author_name] = score;
-                    best_comment_urls[author_name] = post.comments[post_val].url;
+                    best_comment_urls[author_name] = post.comments[post_val].permalink;
                     best_comments[author_name] = post.comments[post_val].body.substring(0, 140);
                   }
                 }

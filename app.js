@@ -146,26 +146,6 @@ function handle_new_posts(post) {
       function (err, group) {
         if( err ) return console.log( err );
           
-        if (group) {
-          query_reddit_posts = Reddit_Post.count({group_slug: group.slug});
-          var promise_reddit_posts = query_reddit_posts.exec();
-
-          promise_reddit_posts.then(function (reddit_posts_val) {
-            if (reddit_posts_val) {
-              Group.update({
-                slug : group.slug
-              }, {
-                $set: { 
-                    post_count: reddit_posts_val,
-                    update_time : Date.now() 
-                }
-              }, function (err, updated_group) {
-                if( err ) return console.log( err );
-              });
-            }
-          });
-        }
-          
         if (post.id) {
           Reddit_Post.findOne ({
               id: post.id
@@ -193,6 +173,26 @@ function handle_new_posts(post) {
                   update_time  : Date.now()
               }).save( function ( err, group_schedule, count ){
                 if( err ) return console.log( err );
+                  
+                if (group) {
+                  query_reddit_posts = Reddit_Post.count({group_slug: group_slug});
+                  var promise_reddit_posts = query_reddit_posts.exec();
+
+                  promise_reddit_posts.then(function (reddit_posts_val) {
+                    if (reddit_posts_val) {
+                      Group.update({
+                        slug : group.slug
+                      }, {
+                        $set: { 
+                            post_count: reddit_posts_val,
+                            update_time : Date.now() 
+                        }
+                      }, function (err, updated_group) {
+                        if( err ) return console.log( err );
+                      });
+                    }
+                  });
+                }
               });
             }
           });
@@ -312,7 +312,8 @@ cron.schedule('15,45 * * * *', function(){
                         best_comment_scores[author_name] < score) {
                     best_comment_scores[author_name] = score;
                     best_comment_urls[author_name] = post.comments[post_val].permalink;
-                    best_comments[author_name] = post.comments[post_val].body.substring(0, 140);
+                    var no_spoilers_body = post.comments[post_val].body.replace(/\(\/s.*?\)/i,"(Spoilers)");
+                    best_comments[author_name] = no_spoilers_body.substring(0, 280);
                   }
                 }
               }
@@ -338,6 +339,14 @@ cron.schedule('15,45 * * * *', function(){
                         comment_score_totals[author_name] = score;
                       else 
                         comment_score_totals[author_name] += score;
+                        
+                      if (typeof best_comment_scores[author_name] == 'undefined' || 
+                          best_comment_scores[author_name] < score) {
+                        best_comment_scores[author_name] = score;
+                        best_comment_urls[author_name] = post.comments[post_val].replies[replies_val].permalink;
+                        var no_spoilers_body = post.comments[post_val].replies[replies_val].body.replace(/\(\/s.*?\)/i,"(Spoilers)");
+                        best_comments[author_name] = no_spoilers_body.substring(0, 140);
+                      }
                     }
                   }
                 } 

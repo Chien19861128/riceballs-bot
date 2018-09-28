@@ -88,26 +88,20 @@ function handle_new_posts(post) {
     var rewatch_title = '';
       
     if (title_notag.match(/interest|schedule/i)) {
-      var l_trimmed_str = title_notag; 
+      rewatch_title = title_notag; 
         
       if (title_notag.toLowerCase().indexOf("interest for an ") >= 0) {
-        l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interest for an ") + 16);
+        rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interest for an ") + 16);
       } else if (title_notag.toLowerCase().indexOf("interest for a ") >= 0) {
-        l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interest for a ") + 15);
+        rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interest for a ") + 15);
       } else if (title_notag.toLowerCase().indexOf("interest for ") >= 0) {
-        l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interest for ") + 13);
+        rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interest for ") + 13);
       } else if (title_notag.toLowerCase().indexOf("interested for an ") >= 0) {
-        l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interested for an ") + 18);
+        rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for an ") + 18);
       } else if (title_notag.toLowerCase().indexOf("interested for a ") >= 0) {
-        l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interested for a ") + 17);
+        rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for a ") + 17);
       } else if (title_notag.toLowerCase().indexOf("interested for ") >= 0) {
-        l_trimmed_str = title_notag.substring(title_notag.toLowerCase().indexOf("interested for ") + 15);
-      }
-        
-      if (l_trimmed_str && l_trimmed_str.toLowerCase().indexOf("rewatch") >= 0) {
-        rewatch_title = l_trimmed_str.substring(0, l_trimmed_str.toLowerCase().indexOf("rewatch")).trim();
-      } else {
-        rewatch_title = l_trimmed_str;
+        rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for ") + 15);
       }
     } else if (title_notag.match(/remind|starts in/i)) {
       is_start_group = false;
@@ -119,6 +113,8 @@ function handle_new_posts(post) {
         
       is_discuss_thread = true;
     }
+    
+    rewatch_title = rewatch_title.replace(/rewatch/gi, "").trim();  
       
     if (!post.title.match(/\[Rewatch\]/i) && post.link_flair_text != "Rewatch") is_start_group = false;
       

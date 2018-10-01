@@ -386,6 +386,7 @@ cron.schedule('15,45 * * * *', function(){
           var comment_last_time   = comment_last_times[comment_user_name];
           var comment_score_total = comment_score_totals[comment_user_name];
           var best_comment        = best_comments[comment_user_name];
+          var best_comment_score  = best_comment_scores[comment_user_name];
           var best_comment_url    = best_comment_urls[comment_user_name];
               
           Reddit_Comment_User.findOne ({
@@ -416,7 +417,7 @@ cron.schedule('15,45 * * * *', function(){
                         
                   var add_score = comment_score_total - user.score_total;
                   if (reddit_post_group_slug && add_score != 0)
-                    update_group_mvp(comment_user_name, reddit_post_group_slug, add_score, best_comment, best_comment_url);
+                    update_group_mvp(comment_user_name, reddit_post_group_slug, add_score, best_comment, best_comment_score, best_comment_url);
                 });
               }
             } else {
@@ -436,7 +437,7 @@ cron.schedule('15,45 * * * *', function(){
                 if( err ) return console.log( err );
                     
                 if (reddit_post_group_slug && comment_score_total != 0)
-                  update_group_mvp(comment_user_name, reddit_post_group_slug, comment_score_total, best_comment, best_comment_url);
+                  update_group_mvp(comment_user_name, reddit_post_group_slug, comment_score_total, best_comment, best_comment_score, best_comment_url);
               });
             }
           });
@@ -528,7 +529,7 @@ cron.schedule('15,45 * * * *', function(){
     });
   }    
     
-  function update_group_mvp(comment_user_name, reddit_post_group_slug, add_score, best_comment, best_comment_url) {
+  function update_group_mvp(comment_user_name, reddit_post_group_slug, add_score, best_comment, best_comment_score, best_comment_url) {
     var query_reddit_posts = Reddit_Post.find({group_slug: reddit_post_group_slug});
     var promise_reddit_posts = query_reddit_posts.exec();
 
@@ -556,30 +557,42 @@ cron.schedule('15,45 * * * *', function(){
                 
               if (group_mvp) {
                 var new_score_total = group_mvp.score_total + add_score;
+                  
+                var update_best_comment       = group_mvp.best_comment;
+                var update_best_comment_score = group_mvp.best_comment_score;
+                var update_best_comment_url   = group_mvp.best_comment_url;
+                if (best_comment_score >= group_mvp.best_comment_score) {
+                  update_best_comment       = best_comment;
+                  update_best_comment_score = best_comment_score;
+                  update_best_comment_url   = best_comment_url;
+                }
+                  
                 Group_Mvp.update({
                     group_slug  : reddit_post_group_slug,
                     reddit_name : comment_user_name,
                 }, {
                     $set: { 
-                        score_total : new_score_total,
-                        attend_count: attend_count,
-                        best_comment: best_comment,
-                        best_comment_url: best_comment_url,
-                        update_time : Date.now() 
+                        score_total       : new_score_total,
+                        attend_count      : attend_count,
+                        best_comment      : update_best_comment,
+                        best_comment_score: update_best_comment_score,
+                        best_comment_url  : update_best_comment_url,
+                        update_time       : Date.now() 
                     }
                 }, function (err, updated_group_mvp) {
                   if( err ) return console.log( err );
                 });
               } else {
                 Group_Mvp.create({
-                    group_slug  : reddit_post_group_slug,
-                    reddit_name : comment_user_name,
-                    score_total : add_score,
-                    attend_count: attend_count,
-                    best_comment: best_comment,
-                    best_comment_url: best_comment_url,
-                    create_time : Date.now(),
-                    update_time : Date.now()
+                    group_slug        : reddit_post_group_slug,
+                    reddit_name       : comment_user_name,
+                    score_total       : add_score,
+                    attend_count      : attend_count,
+                    best_comment      : best_comment,
+                    best_comment_score: best_comment_score,
+                    best_comment_url  : best_comment_url,
+                    create_time       : Date.now(),
+                    update_time       : Date.now()
                 }, function (err, new_group_mvp) {
                   if( err ) return console.log( err );
                 });

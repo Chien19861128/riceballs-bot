@@ -102,12 +102,15 @@ function handle_new_posts(post) {
         rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for a ") + 17);
       } else if (title_notag.toLowerCase().indexOf("interested for ") >= 0) {
         rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for ") + 15);
-      } else if (title_notag.match(/ - | episode| movie| ova | season /i)) {
+      }
+    } else if (title_notag.match(/ - | episode| movie| ova | season /i)) {
           
       var match_res = title_notag.match(/ - | episode| movie| ova | season /i);
       rewatch_title = title_notag.substring(0, match_res.index).trim();
         
       is_discuss_thread = true;
+    } else {
+      is_start_group = false;
     }
     
     rewatch_title = rewatch_title.replace(/rewatch/gi, "").trim();  

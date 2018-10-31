@@ -102,11 +102,7 @@ function handle_new_posts(post) {
         rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for a ") + 17);
       } else if (title_notag.toLowerCase().indexOf("interested for ") >= 0) {
         rewatch_title = title_notag.substring(title_notag.toLowerCase().indexOf("interested for ") + 15);
-      }
-    } else if (title_notag.match(/remind|starts in/i)) {
-      is_start_group = false;
-          
-    } else if (title_notag.match(/ - | episode| movie| ova | season /i)) {
+      } else if (title_notag.match(/ - | episode| movie| ova | season /i)) {
           
       var match_res = title_notag.match(/ - | episode| movie| ova | season /i);
       rewatch_title = title_notag.substring(0, match_res.index).trim();

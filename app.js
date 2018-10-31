@@ -353,7 +353,7 @@ cron.schedule('15,45 * * * *', function(){
           for (var post_val in post.comments) {
             if (post.comments[post_val] && post_val != '_r') {
               if (typeof post.comments[post_val].author != 'undefined') {
-                if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0) {
+                if (post.comments[post_val].body.toLowerCase().indexOf("[follow]") >= 0 || post.comments[post_val].body.toLowerCase().indexOf("remindme") >= 0) {
                   var author_name = post.comments[post_val].author.name;
                   var comment_time = new Date(post.comments[post_val].created_utc);
                   var comment_last_time = new Date(comment_last_times[author_name]);

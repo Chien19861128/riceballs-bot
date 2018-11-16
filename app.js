@@ -77,6 +77,7 @@ module.exports.manual_fix_post = function (post_id) {
 };
 
 function handle_new_posts(post) {
+    console.log(post);
   if ((post.title && post.title.toLowerCase().indexOf(process.env.PARSE_TEXT) >= 0) 
       || post.link_flair_text == "Rewatch") {
       
@@ -307,8 +308,8 @@ cron.schedule('15,45 * * * *', function(){
                         best_comment_scores[author_name] < score) {
                     best_comment_scores[author_name] = score;
                     best_comment_urls[author_name] = post.comments[post_val].permalink;
-                    var no_spoilers_body = post.comments[post_val].body.replace(/\(\/s.*?\)/i,"(Spoilers)");
-                    best_comments[author_name] = no_spoilers_body.substring(0, 280);
+                    var no_spoilers_body = post.comments[post_val].body_html.replace(/\(\/s.*?\)/i,"(Spoilers)");
+                    best_comments[author_name] = no_spoilers_body;
                   }
                 }
               }
@@ -340,7 +341,7 @@ cron.schedule('15,45 * * * *', function(){
                         best_comment_scores[author_name] = score;
                         best_comment_urls[author_name] = post.comments[post_val].replies[replies_val].permalink;
                         var no_spoilers_body = post.comments[post_val].replies[replies_val].body.replace(/\(\/s.*?\)/i,"(Spoilers)");
-                        best_comments[author_name] = no_spoilers_body.substring(0, 140);
+                        best_comments[author_name] = no_spoilers_body;
                       }
                     }
                   }

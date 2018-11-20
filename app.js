@@ -77,7 +77,6 @@ module.exports.manual_fix_post = function (post_id) {
 };
 
 function handle_new_posts(post) {
-    console.log(post);
   if ((post.title && post.title.toLowerCase().indexOf(process.env.PARSE_TEXT) >= 0) 
       || post.link_flair_text == "Rewatch") {
       
